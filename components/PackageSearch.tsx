@@ -10,15 +10,25 @@ interface PackageSearchProps {
   isLoading?: boolean;
 }
 
+type CabinClass = "economy" | "premium_economy" | "business" | "first";
+
 export function PackageSearch({ onSearch, isLoading = false }: PackageSearchProps) {
-  const [searchParams, setSearchParams] = useState({
+  const [searchParams, setSearchParams] = useState<{
+    departure_airport: string;
+    cruise_destination: string;
+    cruise_departure_date: string;
+    cruise_duration: string;
+    passengers: number;
+    cabin_class: CabinClass;
+    max_stops: number | undefined;
+  }>({
     departure_airport: "ICN",
     cruise_destination: "",
     cruise_departure_date: "",
     cruise_duration: "",
     passengers: 2,
-    cabin_class: "economy" as const,
-    max_stops: undefined as number | undefined,
+    cabin_class: "economy",
+    max_stops: undefined,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -78,7 +88,7 @@ export function PackageSearch({ onSearch, isLoading = false }: PackageSearchProp
               onChange={(e) =>
                 setSearchParams({
                   ...searchParams,
-                  cabin_class: e.target.value as "economy" | "premium_economy" | "business" | "first",
+                  cabin_class: e.target.value as CabinClass,
                 })
               }
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
