@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSC Cruises - 세계 최고의 크루즈 여행</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Header */
+        header {
+            background: #003366;
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #FFD700;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(0,51,102,0.7), rgba(0,51,102,0.7)),
+                        url('https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=1920') center/cover;
+            height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero-content p {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+        }
+
+        .cta-button {
+            background: #FFD700;
+            color: #003366;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .cta-button:hover {
+            background: #FFC700;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,215,0,0.4);
+        }
+
+        /* Search Section */
+        .search-section {
+            background: white;
+            padding: 40px 20px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f5f7fa;
+            border-radius: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #003366;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .search-button {
+            background: #003366;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            align-self: end;
+        }
+
+        .search-button:hover {
+            background: #004080;
+        }
+
+        /* Featured Cruises */
+        .featured-section {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5em;
+            color: #003366;
+            margin-bottom: 50px;
+        }
+
+        .cruise-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cruise-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .cruise-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .cruise-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .cruise-info {
+            padding: 25px;
+        }
+
+        .cruise-title {
+            font-size: 1.5em;
+            color: #003366;
+            margin-bottom: 10px;
+        }
+
+        .cruise-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .cruise-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .cruise-price {
+            font-size: 1.8em;
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .cruise-price small {
+            font-size: 0.5em;
+            color: #666;
+        }
+
+        .view-button {
+            background: #003366;
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .view-button:hover {
+            background: #004080;
+        }
+
+        /* Why Choose Us */
+        .why-section {
+            padding: 80px 20px;
+            background: white;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            margin: 50px auto 0;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .feature-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.3em;
+            color: #003366;
+            margin-bottom: 15px;
+        }
+
+        .feature-description {
+            color: #666;
+        }
+
+        /* Footer */
+        footer {
+            background: #003366;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+
+        .footer-section h3 {
+            color: #FFD700;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            color: #FFD700;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2em;
+            }
+
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <div class="logo">🚢 MSC CRUISES</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#cruises">크루즈</a></li>
+                <li><a href="#destinations">목적지</a></li>
+                <li><a href="#deals">특가</a></li>
+                <li><a href="#my-msc">My MSC</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>꿈꿀 수 있는 모든 여행</h1>
+            <p>지중해부터 카리브해까지, 세계 최고의 크루즈 경험</p>
+            <button class="cta-button">지금 예약하기</button>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="search-section">
+        <div class="container">
+            <form class="search-form">
+                <div class="form-group">
+                    <label for="destination">목적지</label>
+                    <select id="destination">
+                        <option>목적지 선택</option>
+                        <option>지중해</option>
+                        <option>카리브해</option>
+                        <option>북유럽</option>
+                        <option>알래스카</option>
+                        <option>아시아</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="departure">출발일</label>
+                    <input type="date" id="departure">
+                </div>
+                <div class="form-group">
+                    <label for="duration">여행 기간</label>
+                    <select id="duration">
+                        <option>기간 선택</option>
+                        <option>3-7일</option>
+                        <option>8-14일</option>
+                        <option>15일 이상</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="passengers">인원</label>
+                    <select id="passengers">
+                        <option>1명</option>
+                        <option>2명</option>
+                        <option>3명</option>
+                        <option>4명+</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="search-button">검색</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Featured Cruises -->
+    <section class="featured-section" id="cruises">
+        <div class="container">
+            <h2 class="section-title">인기 크루즈</h2>
+            <div class="cruise-grid">
+                <div class="cruise-card">
+                    <img src="https://images.unsplash.com/photo-1563206767-5b18f218e8de?w=800" alt="MSC Seaside" class="cruise-image">
+                    <div class="cruise-info">
+                        <h3 class="cruise-title">MSC Seaside - 카리브해 7일</h3>
+                        <p class="cruise-description">
+                            마이애미 출발 • 코수멜, 자메이카, 바하마
+                        </p>
+                        <div class="cruise-details">
+                            <div class="cruise-price">
+                                $1,299<br>
+                                <small>1인 기준</small>
+                            </div>
+                            <button class="view-button">상세보기</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cruise-card">
+                    <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800" alt="MSC Meraviglia" class="cruise-image">
+                    <div class="cruise-info">
+                        <h3 class="cruise-title">MSC Meraviglia - 지중해 10일</h3>
+                        <p class="cruise-description">
+                            바르셀로나 출발 • 로마, 아테네, 산토리니
+                        </p>
+                        <div class="cruise-details">
+                            <div class="cruise-price">
+                                $1,899<br>
+                                <small>1인 기준</small>
+                            </div>
+                            <button class="view-button">상세보기</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cruise-card">
+                    <img src="https://images.unsplash.com/photo-1599640842225-85d111c60e6b?w=800" alt="MSC Divina" class="cruise-image">
+                    <div class="cruise-info">
+                        <h3 class="cruise-title">MSC Divina - 북유럽 12일</h3>
+                        <p class="cruise-description">
+                            코펜하겐 출발 • 노르웨이 피오르드, 스톡홀름
+                        </p>
+                        <div class="cruise-details">
+                            <div class="cruise-price">
+                                $2,499<br>
+                                <small>1인 기준</small>
+                            </div>
+                            <button class="view-button">상세보기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us -->
+    <section class="why-section">
+        <div class="container">
+            <h2 class="section-title">MSC Cruises를 선택하는 이유</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🌊</div>
+                    <h3 class="feature-title">최신 선박</h3>
+                    <p class="feature-description">
+                        혁신적인 디자인과 최첨단 시설을 갖춘 현대적인 크루즈 선박
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🍽️</div>
+                    <h3 class="feature-title">월드클래스 다이닝</h3>
+                    <p class="feature-description">
+                        미슐랭 스타 셰프가 선보이는 다양한 글로벌 요리
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎭</div>
+                    <h3 class="feature-title">엔터테인먼트</h3>
+                    <p class="feature-description">
+                        브로드웨이 수준의 쇼와 다양한 야간 프로그램
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                    <h3 class="feature-title">가족 친화적</h3>
+                    <p class="feature-description">
+                        어린이부터 성인까지 모두가 즐길 수 있는 다양한 활동
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>MSC Cruises</h3>
+                <p>세계 최고의 크루즈 여행 경험을 제공합니다.</p>
+            </div>
+            <div class="footer-section">
+                <h3>빠른 링크</h3>
+                <ul class="footer-links">
+                    <li><a href="#cruises">크루즈</a></li>
+                    <li><a href="#destinations">목적지</a></li>
+                    <li><a href="#deals">특가</a></li>
+                    <li><a href="#contact">문의</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>고객 지원</h3>
+                <ul class="footer-links">
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#booking">예약 관리</a></li>
+                    <li><a href="#cancellation">취소 정책</a></li>
+                    <li><a href="#contact">연락처</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>My MSC</h3>
+                <ul class="footer-links">
+                    <li><a href="#login">로그인</a></li>
+                    <li><a href="#register">회원가입</a></li>
+                    <li><a href="#loyalty">Voyagers Club</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 MSC Cruises. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // CTA Button
+        document.querySelector('.cta-button').addEventListener('click', () => {
+            document.querySelector('.search-section').scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSC Cruises - System Status</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-weight: bold;
+            font-size: 0.875rem;
+            margin-top: 12px;
+        }
+
+        .status-healthy {
+            background: #22c55e;
+            color: white;
+        }
+
+        .status-degraded {
+            background: #eab308;
+            color: white;
+        }
+
+        .status-error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-loading {
+            background: #6366f1;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-content {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #94a3b8;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .check-item {
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .check-healthy {
+            border-left-color: #22c55e;
+        }
+
+        .check-degraded {
+            border-left-color: #eab308;
+        }
+
+        .check-error {
+            border-left-color: #ef4444;
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: #60a5fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #60a5fa;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: #64748b;
+            margin-top: 40px;
+            padding: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MSC Cruises System Status</h1>
+            <p class="subtitle">Real-time monitoring of Story 001 CRS/GDS API Integration</p>
+            <div id="overall-status">
+                <span class="status-badge status-loading">Loading...</span>
+            </div>
+        </header>
+
+        <div id="error-container"></div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Fetching system status...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- System Overview -->
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">
+                        ⚡ System Health
+                        <span id="health-indicator"></span>
+                    </div>
+                    <div class="card-content" id="system-metrics"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        🗄️ Database
+                        <span id="db-indicator"></span>
+                    </div>
+                    <div class="card-content" id="db-info"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        🔌 CRS API
+                        <span id="crs-indicator"></span>
+                    </div>
+                    <div class="card-content" id="crs-info"></div>
+                </div>
+            </div>
+
+            <!-- Story 001 Status -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-title">
+                    📋 Story 001: CRS/GDS API Integration
+                    <span class="status-badge status-healthy">✅ Completed</span>
+                </div>
+                <div class="card-content">
+                    <div class="grid" id="acceptance-criteria" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));"></div>
+                </div>
+            </div>
+
+            <!-- Environment Info -->
+            <div class="card">
+                <div class="card-title">🔧 Environment Configuration</div>
+                <div class="card-content" id="env-info"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <a href="/" class="btn">홈으로</a>
+            <a href="/dev/status" class="btn">Full Status Page</a>
+            <a href="/api/health" class="btn" target="_blank">Raw JSON</a>
+            <p style="margin-top: 20px;">Last updated: <span id="last-update"></span></p>
+        </div>
+    </div>
+
+    <script>
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+                // Update overall status
+                const statusBadge = document.getElementById('overall-status');
+                const statusClass = data.status === 'healthy' ? 'status-healthy' :
+                                   data.status === 'degraded' ? 'status-degraded' : 'status-error';
+                statusBadge.innerHTML = `<span class="status-badge ${statusClass}">${data.status.toUpperCase()}</span>`;
+
+                // System metrics
+                const metricsHtml = `
+                    <div class="metric">
+                        <span class="metric-label">Response Time</span>
+                        <span class="metric-value">${data.responseTime}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Uptime</span>
+                        <span class="metric-value">${Math.floor(data.uptime)}s</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Version</span>
+                        <span class="metric-value">${data.version}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Timestamp</span>
+                        <span class="metric-value">${new Date(data.timestamp).toLocaleString('ko-KR')}</span>
+                    </div>
+                `;
+                document.getElementById('system-metrics').innerHTML = metricsHtml;
+
+                // Database info
+                const dbStatus = data.checks.database.status;
+                const dbIndicator = dbStatus === 'healthy' ? '✅' : '❌';
+                document.getElementById('db-indicator').textContent = dbIndicator;
+
+                const dbHtml = `
+                    <div class="metric">
+                        <span class="metric-label">Status</span>
+                        <span class="metric-value">${dbStatus}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Type</span>
+                        <span class="metric-value">${data.checks.database.type || 'N/A'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Response Time</span>
+                        <span class="metric-value">${data.checks.database.responseTime || 'N/A'}</span>
+                    </div>
+                `;
+                document.getElementById('db-info').innerHTML = dbHtml;
+
+                // CRS API info
+                const crsStatus = data.checks.crsApi.status;
+                const crsIndicator = crsStatus === 'healthy' ? '✅' : crsStatus === 'degraded' ? '⚠️' : '❌';
+                document.getElementById('crs-indicator').textContent = crsIndicator;
+
+                const crsHtml = `
+                    <div class="metric">
+                        <span class="metric-label">Status</span>
+                        <span class="metric-value">${crsStatus}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Mode</span>
+                        <span class="metric-value">${data.checks.crsApi.mode}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Response Time</span>
+                        <span class="metric-value">${data.checks.crsApi.responseTime}</span>
+                    </div>
+                `;
+                document.getElementById('crs-info').innerHTML = crsHtml;
+
+                // Acceptance Criteria
+                const acData = data.checks.story001.acceptanceCriteria;
+                let acHtml = '';
+                for (const [key, value] of Object.entries(acData)) {
+                    const acName = key.replace(/_/g, ' ');
+                    acHtml += `
+                        <div class="check-item check-healthy">
+                            <strong>${acName}</strong><br>
+                            <small>${value}</small>
+                        </div>
+                    `;
+                }
+                document.getElementById('acceptance-criteria').innerHTML = acHtml;
+
+                // Environment info
+                const envHtml = `
+                    <div class="metric">
+                        <span class="metric-label">Node Environment</span>
+                        <span class="metric-value">${data.checks.environment.nodeEnv}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">GCP Project ID</span>
+                        <span class="metric-value">${data.checks.environment.gcpProjectId}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Redis</span>
+                        <span class="metric-value">${data.checks.environment.features.redis}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Sentry</span>
+                        <span class="metric-value">${data.checks.environment.features.sentry}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">SMTP</span>
+                        <span class="metric-value">${data.checks.environment.features.smtp}</span>
+                    </div>
+                `;
+                document.getElementById('env-info').innerHTML = envHtml;
+
+                // Update timestamp
+                document.getElementById('last-update').textContent = new Date().toLocaleString('ko-KR');
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-container').innerHTML = `
+                    <div class="error-message">
+                        <strong>Error loading system status:</strong><br>
+                        ${error.message}<br><br>
+                        <small>Please make sure the development server is running and try again.</small>
+                    </div>
+                `;
+                document.getElementById('overall-status').innerHTML =
+                    '<span class="status-badge status-error">ERROR</span>';
+            }
+        }
+
+        // Fetch status on load
+        fetchStatus();
+
+        // Auto-refresh every 30 seconds
+        setInterval(fetchStatus, 30000);
+    </script>
+</body>
+</html>

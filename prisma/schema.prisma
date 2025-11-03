@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String? // For email/password login
+  phone         String?
+  userType      String    @default("customer") // "customer" or "partner"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  partnerInfo   PartnerInfo?
+  voyagersClub  VoyagersClub?
+  bookings      Booking[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// MSC Cruises Custom Models
+model PartnerInfo {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  companyName       String
+  businessNumber    String
+  representativeName String
+  address           String
+  commissionRate    Float    @default(0.08)
+  subpageUrl        String   @unique
+  status            String   @default("pending") // "pending", "active", "suspended"
+  approvedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings          Booking[]
+}
+
+model VoyagersClub {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  membershipNumber String   @unique
+  tier             String   @default("classic") // "classic", "silver", "gold", "black"
+  points           Int      @default(0)
+  joinedAt         DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  userId          String
+  bookingNumber   String   @unique
+  cruiseId        String
+  cruiseName      String
+  shipName        String
+  departureDate   DateTime
+  returnDate      DateTime
+  departurePort   String
+  cabinCategory   String
+  cabinNumber     String?
+  totalPrice      Float
+  currency        String   @default("USD")
+  status          String   @default("pending") // "pending", "confirmed", "cancelled", "completed"
+  paymentStatus   String   @default("pending") // "pending", "paid", "refunded"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Package info
+  isPackage       Boolean  @default(false)
+  outboundFlight  String?
+  returnFlight    String?
+  packageDiscount Float?
+
+  // Partner info
+  partnerId       String?
+  partnerCommission Float?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner         PartnerInfo? @relation(fields: [partnerId], references: [id])
+  passengers      Passenger[]
+}
+
+model Passenger {
+  id            String   @id @default(cuid())
+  bookingId     String
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime
+  passportNumber String?
+  nationality   String
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+// Cruise Product Model
+model Cruise {
+  id              String   @id @default(cuid())
+  name            String
+  shipName        String
+  description     String?
+  departurePort   String
+  destinations    String   // JSON array of destinations
+  durationDays    Int
+  startingPrice   Float
+  currency        String   @default("USD")
+  status          String   @default("active") // "active", "inactive", "draft"
+  featured        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  media           CruiseMedia[]
+  itineraries     CruiseItinerary[]
+}
+
+// Cruise Media Model (Images & Videos)
+model CruiseMedia {
+  id              String   @id @default(cuid())
+  cruiseId        String
+  type            String   // "image" or "video"
+  url             String
+  filename        String
+  filesize        Int?     // in bytes
+  mimeType        String?
+  width           Int?
+  height          Int?
+  duration        Int?     // for videos, in seconds
+  isPrimary       Boolean  @default(false) // 대표 이미지/비디오
+  order           Int      @default(0)
+  alt             String?
+  caption         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cruise          Cruise   @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
+
+  @@index([cruiseId])
+}
+
+// Cruise Itinerary Model
+model CruiseItinerary {
+  id              String   @id @default(cuid())
+  cruiseId        String
+  day             Int
+  port            String
+  arrival         String?  // Time of arrival
+  departure       String?  // Time of departure
+  activities      String?  // JSON array of activities
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cruise          Cruise   @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
+
+  @@index([cruiseId])
+}
