@@ -12,6 +12,15 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          userType: "customer" as const,
+        };
+      },
     }),
     // Naver OAuth - Custom Provider
     {
@@ -34,6 +43,7 @@ export const authOptions: NextAuthOptions = {
           name: profile.response.name,
           email: profile.response.email,
           image: profile.response.profile_image,
+          userType: "customer" as const,
         };
       },
     },
