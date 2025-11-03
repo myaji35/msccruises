@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Ship, Mail, Lock, User, Phone, Building, FileText, MapPin, ArrowLeft } from "lucide-react";
 import { signIn } from "next-auth/react";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [userType, setUserType] = useState<"customer" | "partner">("customer");
@@ -363,5 +363,14 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-[#003366] via-[#004080] to-[#005599] flex items-center justify-center"><div className="text-white">로딩 중...</div></div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
