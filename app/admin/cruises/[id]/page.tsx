@@ -41,18 +41,22 @@ interface Cruise {
   }>;
 }
 
-export default function CruiseDetailPage({ params }: { params: { id: string } }) {
+export default function CruiseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [cruise, setCruise] = useState<Cruise | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cruiseId, setCruiseId] = useState<string>("");
 
   useEffect(() => {
-    fetchCruise();
+    params.then((resolvedParams) => {
+      setCruiseId(resolvedParams.id);
+      fetchCruise(resolvedParams.id);
+    });
   }, []);
 
-  const fetchCruise = async () => {
+  const fetchCruise = async (id: string) => {
     try {
-      const response = await fetch(`/api/admin/cruises/${params.id}`);
+      const response = await fetch(`/api/admin/cruises/${id}`);
       if (!response.ok) throw new Error("Failed to fetch cruise");
       const data = await response.json();
       setCruise(data.cruise);
@@ -68,7 +72,7 @@ export default function CruiseDetailPage({ params }: { params: { id: string } })
     if (!confirm("정말 이 크루즈 상품을 삭제하시겠습니까?")) return;
 
     try {
-      const response = await fetch(`/api/admin/cruises/${params.id}`, {
+      const response = await fetch(`/api/admin/cruises/${cruiseId}`, {
         method: "DELETE",
       });
 
