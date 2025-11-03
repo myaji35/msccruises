@@ -6,11 +6,12 @@ import { prisma } from "@/lib/prisma";
 // GET /api/admin/cruises/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const cruise = await prisma.cruise.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         media: {
           orderBy: { order: "asc" },
@@ -37,9 +38,10 @@ export async function GET(
 // PUT /api/admin/cruises/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Check authentication (개발 모드에서는 우회)
     const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -57,7 +59,7 @@ export async function PUT(
 
     // Update cruise
     const cruise = await prisma.cruise.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...cruiseData,
         destinations: cruiseData.destinations
@@ -89,9 +91,10 @@ export async function PUT(
 // DELETE /api/admin/cruises/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Check authentication (개발 모드에서는 우회)
     const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -105,7 +108,7 @@ export async function DELETE(
     }
 
     await prisma.cruise.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true, message: "Cruise deleted" });
