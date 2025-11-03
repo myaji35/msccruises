@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // AC2: 특정 예약 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -20,7 +21,7 @@ export async function GET(
 
     const booking = await prisma.booking.findUnique({
       where: {
-        id: params.id,
+        id,
       },
       include: {
         passengers: true,
@@ -74,9 +75,10 @@ export async function GET(
 // AC4: 예약 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -87,7 +89,7 @@ export async function PUT(
     }
 
     const booking = await prisma.booking.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!booking) {
@@ -127,7 +129,7 @@ export async function PUT(
     const updatedBooking = await prisma.$transaction(async (tx) => {
       // 1. Update main booking
       const updated = await tx.booking.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           cabinCategory: cabin_category || booking.cabinCategory,
           updatedAt: new Date(),
@@ -138,13 +140,13 @@ export async function PUT(
       if (passengers && passengers.length > 0) {
         // Delete existing passengers
         await tx.passenger.deleteMany({
-          where: { bookingId: params.id },
+          where: { bookingId: id },
         });
 
         // Create new passengers
         await tx.passenger.createMany({
           data: passengers.map((p: any, index: number) => ({
-            bookingId: params.id,
+            bookingId: id,
             firstName: p.first_name,
             lastName: p.last_name,
             dateOfBirth: new Date(p.date_of_birth),
@@ -188,9 +190,10 @@ export async function PUT(
 // AC5: 예약 취소
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -201,7 +204,7 @@ export async function DELETE(
     }
 
     const booking = await prisma.booking.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!booking) {
@@ -244,7 +247,7 @@ export async function DELETE(
 
     // Update booking status
     const cancelledBooking = await prisma.booking.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: "cancelled",
         paymentStatus: "refunded",

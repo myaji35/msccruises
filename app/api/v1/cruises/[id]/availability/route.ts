@@ -7,12 +7,12 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const startTime = Date.now();
 
   try {
-    const cruiseId = params.id;
+    const { id: cruiseId } = await params;
 
     if (!cruiseId) {
       return NextResponse.json(
@@ -82,9 +82,10 @@ export async function GET(
 // Health check endpoint (AC1)
 export async function HEAD(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await params; // Consume params even if not used
     // Quick availability check without full data
     const isHealthy = await crsApiService.healthCheck();
 
