@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Ship, Mail, Lock, User, Phone, Building, FileText, MapPin, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, Phone, Building, FileText, MapPin, ArrowLeft } from "lucide-react";
 import { signIn } from "next-auth/react";
 
 function RegisterForm() {
@@ -130,9 +131,13 @@ function RegisterForm() {
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 text-[#003366] mb-4">
-            <Ship className="w-12 h-12" />
-            <span className="text-3xl font-bold">MSC CRUISES</span>
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/msc-logo.svg"
+              alt="MSC Cruises"
+              width={200}
+              height={60}
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">회원가입</h1>
           <p className="text-gray-600">새로운 계정을 만들어 크루즈 여행을 시작하세요</p>

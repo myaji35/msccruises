@@ -52,8 +52,14 @@ export default function Home() {
       <header className="bg-[#003366] text-white sticky top-0 z-50 shadow-lg">
         <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/">
-            <div className="text-2xl font-bold text-[#FFD700] cursor-pointer hover:text-[#FFC700] transition">
-              🚢 MSC CRUISES
+            <div className="cursor-pointer hover:opacity-80 transition">
+              <Image
+                src="/msc-logo.svg"
+                alt="MSC Cruises"
+                width={180}
+                height={54}
+                priority
+              />
             </div>
           </Link>
           <div className="flex items-center gap-8">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Home, LayoutDashboard, Package } from "lucide-react";
 
@@ -27,8 +28,14 @@ export default function AdminNav() {
           </Button>
         </Link>
       </div>
-      <div className="text-sm text-gray-600">
-        <span className="font-semibold text-[#003366]">🚢 MSC Cruises</span> 관리자
+      <div className="flex items-center gap-2">
+        <Image
+          src="/msc-logo.svg"
+          alt="MSC Cruises"
+          width={120}
+          height={36}
+        />
+        <span className="text-sm text-gray-600">관리자</span>
       </div>
     </div>
   );
