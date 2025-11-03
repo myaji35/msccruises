@@ -273,7 +273,7 @@ function BookingCard({
   booking: Booking;
   formatPrice: (price: number, currency?: string) => string;
   formatDate: (date: string) => string;
-  getStatusBadge: (status: string) => JSX.Element;
+  getStatusBadge: (status: string) => React.ReactElement;
 }) {
   return (
     <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
