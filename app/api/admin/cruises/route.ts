@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
             order: "asc",
           },
         },
-        itineraries: {
+        cruiseItineraries: {
           orderBy: {
             day: "asc",
           },
@@ -127,10 +127,11 @@ export async function POST(request: NextRequest) {
               })),
             }
           : undefined,
-        itineraries: itineraries
+        cruiseItineraries: itineraries
           ? {
               create: itineraries.map((it: any) => ({
                 day: parseInt(it.day),
+                portType: it.portType || "port_of_call",
                 port: it.port,
                 arrival: it.arrival || null,
                 departure: it.departure || null,
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         media: true,
-        itineraries: true,
+        cruiseItineraries: true,
       },
     });
 

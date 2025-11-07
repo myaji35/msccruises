@@ -55,6 +55,7 @@ model User {
   partnerInfo   PartnerInfo?
   voyagersClub  VoyagersClub?
   bookings      Booking[]
+  snsAccounts   SnsAccount[]
 }
 
 model VerificationToken {
@@ -161,7 +162,9 @@ model Cruise {
   updatedAt       DateTime @updatedAt
 
   media           CruiseMedia[]
-  itineraries     CruiseItinerary[]
+  cruiseItineraries CruiseItinerary[]
+  flightItineraries FlightItinerary[]
+  snsPosts        SnsPost[]
 }
 
 // Cruise Media Model (Images & Videos)
@@ -188,20 +191,128 @@ model CruiseMedia {
   @@index([cruiseId])
 }
 
-// Cruise Itinerary Model
+// Cruise Itinerary Model (Route Management)
 model CruiseItinerary {
   id              String   @id @default(cuid())
   cruiseId        String
-  day             Int
-  port            String
-  arrival         String?  // Time of arrival
-  departure       String?  // Time of departure
+  day             Int      // Day number (1-based)
+  portType        String   // "departure", "port_of_call", "arrival"
+  port            String   // Port name
+  portCode        String?  // IATA/port code (e.g., MIA, BCN)
+  country         String?  // Country name
+  latitude        Float?   // GPS coordinates
+  longitude       Float?   // GPS coordinates
+  arrival         String?  // Time of arrival (HH:MM format)
+  departure       String?  // Time of departure (HH:MM format)
+  durationHours   Int?     // Hours spent at port
   activities      String?  // JSON array of activities
-  description     String?
+  description     String?  // Port description
+  imageUrl        String?  // Port image
+  order           Int      @default(0) // Display order
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   cruise          Cruise   @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
 
   @@index([cruiseId])
+  @@index([day])
+  @@index([portType])
+}
+
+// SNS Account Model (for social media posting)
+model SnsAccount {
+  id              String   @id @default(cuid())
+  userId          String   // Admin or Partner who owns this account
+  platform        String   // "facebook", "instagram", "tiktok", "threads"
+  accountId       String   // Platform-specific account ID or username
+  accessToken     String?  // Encrypted access token
+  refreshToken    String?  // Encrypted refresh token
+  tokenExpiresAt  DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts           SnsPost[]
+
+  @@unique([userId, platform, accountId])
+  @@index([userId])
+}
+
+// SNS Post Model (scheduled posts)
+model SnsPost {
+  id              String   @id @default(cuid())
+  cruiseId        String
+  snsAccountId    String
+  platform        String   // "facebook", "instagram", "tiktok", "threads"
+  content         String   // Post text content
+  mediaUrls       String?  // JSON array of media URLs
+  hashtags        String?  // Comma-separated hashtags
+  status          String   @default("scheduled") // "scheduled", "confirmed", "posted", "failed"
+  scheduledAt     DateTime // When to post
+  postedAt        DateTime?
+  platformPostId  String?  // ID from the platform after posting
+  errorMessage    String?  // Error message if failed
+  createdBy       String   // User ID who created this post
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cruise          Cruise   @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
+  snsAccount      SnsAccount @relation(fields: [snsAccountId], references: [id], onDelete: Cascade)
+
+  @@index([cruiseId])
+  @@index([snsAccountId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// Flight Itinerary Model (항공 경로 관리)
+model FlightItinerary {
+  id              String   @id @default(cuid())
+  cruiseId        String
+  segmentType     String   // "outbound" (가는편), "return" (오는편)
+  flightNumber    String   // Flight number (e.g., KE123, OZ456)
+  airline         String   // Airline name
+  airlineCode     String?  // IATA airline code (e.g., KE, OZ)
+
+  // Departure info
+  departureAirport String  // Airport name
+  departureCode   String   // IATA airport code (e.g., ICN, LAX)
+  departureCity   String?  // City name
+  departureCountry String? // Country name
+  departureTime   String   // Departure time (HH:MM format)
+  departureDate   DateTime // Departure date
+  departureTerminal String? // Terminal info
+
+  // Arrival info
+  arrivalAirport  String   // Airport name
+  arrivalCode     String   // IATA airport code
+  arrivalCity     String?  // City name
+  arrivalCountry  String?  // Country name
+  arrivalTime     String   // Arrival time (HH:MM format)
+  arrivalDate     DateTime // Arrival date
+  arrivalTerminal String?  // Terminal info
+
+  // Flight details
+  duration        Int?     // Flight duration in minutes
+  aircraft        String?  // Aircraft type (e.g., Boeing 777)
+  cabinClass      String?  // "economy", "business", "first"
+  stops           Int      @default(0) // Number of stops
+  stopoverInfo    String?  // JSON array of stopover details
+
+  // Booking info
+  bookingClass    String?  // Booking class code
+  seatInfo        String?  // Seat information
+  baggageAllowance String? // Baggage allowance info
+  mealService     Boolean  @default(true)
+
+  order           Int      @default(0) // Display order
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cruise          Cruise   @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
+
+  @@index([cruiseId])
+  @@index([segmentType])
+  @@index([departureDate])
 }

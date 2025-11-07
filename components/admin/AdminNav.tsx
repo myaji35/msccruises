@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Home, LayoutDashboard, Package } from "lucide-react";
+import { Home, LayoutDashboard, Package, Settings } from "lucide-react";
 
 export default function AdminNav() {
   return (
@@ -25,6 +25,12 @@ export default function AdminNav() {
           <Button variant="ghost" size="sm" className="text-gray-600 hover:text-[#003366]">
             <Package className="w-4 h-4 mr-2" />
             크루즈 관리
+          </Button>
+        </Link>
+        <Link href="/admin/settings">
+          <Button variant="ghost" size="sm" className="text-gray-600 hover:text-[#003366]">
+            <Settings className="w-4 h-4 mr-2" />
+            설정
           </Button>
         </Link>
       </div>

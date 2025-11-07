@@ -18,50 +18,53 @@ import {
   Award,
   FileText,
 } from "lucide-react";
-import { authService } from "@/services/auth.service";
-import type { User, Booking, BookingHistory } from "@/types/auth.types";
+import { useSession, signOut } from "next-auth/react";
+import type { Booking, BookingHistory } from "@/types/auth.types";
 
 export default function MyBookingsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { data: session, status } = useSession();
   const [bookingHistory, setBookingHistory] = useState<BookingHistory | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check authentication
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser) {
+    if (status === "unauthenticated") {
       router.push("/login");
       return;
     }
 
-    if (currentUser.user_type === "partner") {
-      // Redirect partners to partner dashboard
-      router.push("/dashboard/partner");
-      return;
+    if (status === "authenticated" && session) {
+      // TODO: Load booking history from API
+      // For now, using mock data
+      setBookingHistory({
+        total_bookings: 0,
+        total_spent: 0,
+        bookings: [],
+      });
     }
-
-    setUser(currentUser);
-
-    // Load booking history
-    authService.getBookingHistory(currentUser.id).then((history) => {
-      setBookingHistory(history);
-      setIsLoading(false);
-    });
-  }, [router]);
+  }, [status, session, router]);
 
   const handleLogout = () => {
-    authService.logout();
-    router.push("/");
+    signOut({ callbackUrl: "/" });
   };
 
-  if (isLoading || !user || !bookingHistory) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#003366]"></div>
       </div>
     );
   }
+
+  if (!session || !bookingHistory) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#003366]"></div>
+      </div>
+    );
+  }
+
+  const user = session.user;
 
   const formatPrice = (price: number, currency: string = "USD") => {
     return new Intl.NumberFormat("ko-KR", {
@@ -153,30 +156,28 @@ export default function MyBookingsPage() {
         <div className="bg-gradient-to-r from-[#003366] to-[#004080] rounded-2xl shadow-xl p-8 mb-8 text-white">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">안녕하세요, {user.name}님!</h1>
-              <p className="text-blue-200 mb-4">{user.email}</p>
+              <h1 className="text-3xl font-bold mb-2">안녕하세요, {user?.name}님!</h1>
+              <p className="text-blue-200 mb-4">{user?.email}</p>
 
               {/* Voyagers Club Info */}
-              {user.voyagers_club && (
-                <div className="bg-white/10 backdrop-blur rounded-lg p-4 inline-block">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Award className="w-6 h-6 text-[#FFD700]" />
-                    <span className="font-semibold text-lg">MSC Voyagers Club</span>
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4 inline-block">
+                <div className="flex items-center gap-3 mb-2">
+                  <Award className="w-6 h-6 text-[#FFD700]" />
+                  <span className="font-semibold text-lg">MSC Voyagers Club</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <div className="text-sm text-blue-200">멤버십</div>
+                    {getTierBadge("classic")}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <div className="text-sm text-blue-200">멤버십</div>
-                      {getTierBadge(user.voyagers_club.tier)}
-                    </div>
-                    <div className="border-l border-white/30 pl-4">
-                      <div className="text-sm text-blue-200">포인트</div>
-                      <div className="text-2xl font-bold text-[#FFD700]">
-                        {user.voyagers_club.points.toLocaleString()}
-                      </div>
+                  <div className="border-l border-white/30 pl-4">
+                    <div className="text-sm text-blue-200">포인트</div>
+                    <div className="text-2xl font-bold text-[#FFD700]">
+                      0
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="text-right">
@@ -216,7 +217,7 @@ export default function MyBookingsPage() {
               <div>
                 <h3 className="font-bold text-lg text-[#003366]">포인트 사용</h3>
                 <p className="text-sm text-gray-600">
-                  {user.voyagers_club?.points.toLocaleString()} P 보유
+                  0 P 보유
                 </p>
               </div>
             </div>

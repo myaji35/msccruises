@@ -31,9 +31,10 @@ export default function PackagesPage() {
   };
 
   const handleSelectPackage = (pkg: CruiseFlightPackage) => {
-    // TODO: Navigate to booking page
-    console.log("Selected package:", pkg);
-    alert(`${pkg.cruise.name} 패키지가 선택되었습니다.\n예약 페이지로 이동합니다.`);
+    // Save package info to sessionStorage for use in booking
+    sessionStorage.setItem("selectedPackage", JSON.stringify(pkg));
+    // Navigate to booking page with cruise ID
+    window.location.href = `/booking/${pkg.cruise.id}`;
   };
 
   return (
@@ -41,9 +42,14 @@ export default function PackagesPage() {
       {/* Header */}
       <header className="bg-[#003366] text-white sticky top-0 z-50 shadow-lg">
         <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-[#FFD700] flex items-center gap-2">
-            <Ship className="w-8 h-8" />
-            MSC CRUISES
+          <Link href="/" className="flex items-center hover:opacity-80 transition">
+            <Image
+              src="/msc-logo.svg"
+              alt="MSC Cruises"
+              width={180}
+              height={54}
+              priority
+            />
           </Link>
           <ul className="hidden md:flex gap-6">
             <li>
@@ -176,7 +182,14 @@ export default function PackagesPage() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-xl font-bold mb-4 text-[#FFD700]">MSC Cruises</h3>
+              <div className="mb-4">
+                <Image
+                  src="/msc-logo.svg"
+                  alt="MSC Cruises"
+                  width={150}
+                  height={45}
+                />
+              </div>
               <p className="text-gray-300 text-sm">
                 세계 최고의 크루즈 여행을 경험하세요
               </p>
