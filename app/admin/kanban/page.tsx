@@ -3,9 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { ArrowLeft, Plus, Trash2, X, Settings } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { ArrowLeft, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { DropResult } from '@hello-pangea/dnd';
+
+const KanbanBoard = dynamic(() => import('@/components/kanban/KanbanBoard'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-[600px]">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  ),
+});
 
 interface Task {
   id: string;
@@ -33,10 +43,6 @@ export default function KanbanPage() {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Add task states
-  const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
 
   // Edit modal states
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -105,7 +111,7 @@ export default function KanbanPage() {
       if (status !== 'TODO') {
         await updateTaskStatus(newTask.id, status);
       } else {
-        setTasks([...tasks, newTask]);
+        await fetchTasks(); // Refresh to get the task
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create task');
@@ -127,8 +133,7 @@ export default function KanbanPage() {
         throw new Error('Failed to update task');
       }
 
-      const updatedTask = await response.json();
-      setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
+      await fetchTasks(); // Refresh tasks after update
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task');
     }
@@ -149,8 +154,7 @@ export default function KanbanPage() {
         throw new Error('Failed to update task');
       }
 
-      const updatedTask = await response.json();
-      setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
+      await fetchTasks(); // Refresh tasks after update
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task');
     }
@@ -186,15 +190,22 @@ export default function KanbanPage() {
     }
 
     const newStatus = destination.droppableId as Task['status'];
+
+    // Optimistic update
+    const taskToMove = tasks.find(t => t.id === draggableId);
+    if (taskToMove) {
+      const updatedTasks = tasks.map(t =>
+        t.id === draggableId ? { ...t, status: newStatus } : t
+      );
+      setTasks(updatedTasks);
+    }
+
+    // API update
     await updateTaskStatus(draggableId, newStatus);
   };
 
-  const handleAddTask = async (columnId: string) => {
-    if (!newTaskTitle.trim()) return;
-
-    await createTask(newTaskTitle, columnId as Task['status']);
-    setNewTaskTitle('');
-    setAddingToColumn(null);
+  const handleAddTask = async (columnId: string, title: string) => {
+    await createTask(title, columnId as Task['status']);
   };
 
   const handleEditTask = (task: Task) => {
@@ -220,16 +231,6 @@ export default function KanbanPage() {
     localStorage.setItem('kanban_api_key', apiKey);
     setShowApiKeyInput(false);
     fetchTasks();
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   if (!isAuthenticated) {
@@ -306,123 +307,15 @@ export default function KanbanPage() {
         )}
 
         {/* Kanban Board */}
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {columns.map(column => (
-              <div key={column.id} className="flex-shrink-0 w-80">
-                <div className={`rounded-lg ${column.bgColor} p-4`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-gray-900">{column.title}</h2>
-                    <span className="text-sm text-gray-600">
-                      {tasks.filter(t => t.status === column.id).length}
-                    </span>
-                  </div>
-
-                  <Droppable droppableId={column.id}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className="min-h-[500px] space-y-2"
-                      >
-                        {tasks
-                          .filter(task => task.status === column.id)
-                          .map((task, index) => (
-                            <Draggable key={task.id} draggableId={task.id} index={index}>
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`group bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-                                    snapshot.isDragging ? 'ring-2 ring-blue-600' : ''
-                                  }`}
-                                  onClick={() => handleEditTask(task)}
-                                >
-                                  <div className="flex items-start justify-between gap-2 mb-2">
-                                    <h3 className="font-medium text-gray-900 flex-1">
-                                      {task.title}
-                                    </h3>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteTask(task.id);
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-
-                                  {task.description && (
-                                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                                      {task.description}
-                                    </p>
-                                  )}
-
-                                  <p className="text-xs text-gray-500">
-                                    {formatDate(task.updatedAt)}
-                                  </p>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-
-                  {/* Add Task */}
-                  {addingToColumn === column.id ? (
-                    <div className="mt-2 space-y-2">
-                      <textarea
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddTask(column.id);
-                          }
-                          if (e.key === 'Escape') {
-                            setAddingToColumn(null);
-                            setNewTaskTitle('');
-                          }
-                        }}
-                        placeholder="카드 제목 입력..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        rows={2}
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleAddTask(column.id)}>
-                          추가
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setAddingToColumn(null);
-                            setNewTaskTitle('');
-                          }}
-                        >
-                          취소
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setAddingToColumn(column.id)}
-                      className="mt-2 w-full flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-white/50 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      카드 추가
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </DragDropContext>
+        {isAuthenticated && !loading && (
+          <KanbanBoard
+            tasks={tasks}
+            onDragEnd={handleDragEnd}
+            onAddTask={handleAddTask}
+            onEditTask={handleEditTask}
+            onDeleteTask={deleteTask}
+          />
+        )}
       </main>
 
       {/* Edit Modal */}

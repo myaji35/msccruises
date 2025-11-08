@@ -4,7 +4,7 @@ const KANBAN_API_URL = process.env.KANBAN_API_URL || 'http://localhost:3015/api/
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const apiKey = request.headers.get('x-api-key');
@@ -17,8 +17,9 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const { id } = await params;
 
-    const response = await fetch(`${KANBAN_API_URL}/tasks/${params.id}`, {
+    const response = await fetch(`${KANBAN_API_URL}/tasks/${id}`, {
       method: 'PATCH',
       headers: {
         'X-API-Key': apiKey,
@@ -48,7 +49,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const apiKey = request.headers.get('x-api-key');
@@ -60,7 +61,9 @@ export async function DELETE(
       );
     }
 
-    const response = await fetch(`${KANBAN_API_URL}/tasks/${params.id}`, {
+    const { id } = await params;
+
+    const response = await fetch(`${KANBAN_API_URL}/tasks/${id}`, {
       method: 'DELETE',
       headers: {
         'X-API-Key': apiKey,
