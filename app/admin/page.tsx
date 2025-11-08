@@ -11,7 +11,8 @@ import {
   TrendingUp,
   Users,
   Calendar,
-  DollarSign
+  DollarSign,
+  Trello
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -198,7 +199,7 @@ export default function AdminPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link href="/admin/cruises">
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-4">
@@ -222,6 +223,20 @@ export default function AdminPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">SNS 계정 관리</h3>
                   <p className="text-sm text-gray-600">소셜 미디어 계정 연동</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/kanban">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="bg-orange-100 p-4 rounded-lg">
+                  <Trello className="w-8 h-8 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Kanban 보드</h3>
+                  <p className="text-sm text-gray-600">프로젝트 작업 관리</p>
                 </div>
               </div>
             </div>
