@@ -15,7 +15,8 @@ interface Task {
   createdAt: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_KANBAN_API_URL || 'http://localhost:3015/api/kanban/shared';
+// Use Next.js API route as proxy to avoid CORS issues
+const API_URL = '/api/kanban/tasks';
 const DEFAULT_API_KEY = process.env.NEXT_PUBLIC_KANBAN_API_KEY || '';
 
 // Status mapping between UI and API
@@ -72,7 +73,7 @@ export default function KanbanPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/tasks`, {
+      const response = await fetch(API_URL, {
         headers: {
           'X-API-Key': apiKey,
         },
@@ -117,7 +118,7 @@ export default function KanbanPage() {
     const apiStatus = statusMap[columnId];
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/tasks`, {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'X-API-Key': apiKey,
@@ -155,7 +156,7 @@ export default function KanbanPage() {
 
   const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
     try {
-      const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+      const response = await fetch(`${API_URL}/${taskId}`, {
         method: 'PATCH',
         headers: {
           'X-API-Key': apiKey,
@@ -182,7 +183,7 @@ export default function KanbanPage() {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
     try {
-      const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+      const response = await fetch(`${API_URL}/${taskId}`, {
         method: 'DELETE',
         headers: {
           'X-API-Key': apiKey,
