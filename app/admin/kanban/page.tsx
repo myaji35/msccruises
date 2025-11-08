@@ -3,102 +3,49 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Task {
   id: string;
   title: string;
-  description?: string;
-  status: 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
+  description?: string | null;
+  status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
   priority?: 'low' | 'medium' | 'high';
   createdAt: string;
 }
 
-const initialTasks: Task[] = [
-  // Done
-  {
-    id: '1',
-    title: 'Next.js 16 + React 19 업그레이드',
-    description: 'Turbopack 활성화 및 의존성 업데이트',
-    status: 'done',
-    priority: 'high',
-    createdAt: '2025-11-08',
-  },
-  {
-    id: '2',
-    title: 'Zustand 상태 관리 구현',
-    description: '5개 Store 생성: Booking, Search, Auth, Cart, Admin',
-    status: 'done',
-    priority: 'high',
-    createdAt: '2025-11-08',
-  },
-  {
-    id: '3',
-    title: 'Admin Panel 구현',
-    description: '패스워드 인증, 대시보드, 설정',
-    status: 'done',
-    priority: 'high',
-    createdAt: '2025-11-08',
-  },
-  {
-    id: '4',
-    title: 'GCP App Engine 배포',
-    description: 'msccruises.du.r.appspot.com',
-    status: 'done',
-    priority: 'high',
-    createdAt: '2025-11-08',
-  },
-  // To Do
-  {
-    id: '5',
-    title: '실시간 크루즈 재고 관리',
-    description: 'WebSocket 기반 실시간 업데이트',
-    status: 'todo',
-    priority: 'high',
-    createdAt: '2025-11-08',
-  },
-  {
-    id: '6',
-    title: '이메일 알림 시스템',
-    description: '예약 확인, 출발 안내',
-    status: 'todo',
-    priority: 'medium',
-    createdAt: '2025-11-08',
-  },
-  {
-    id: '7',
-    title: '다국어 지원 (i18n)',
-    description: '영어, 한국어, 일본어, 중국어',
-    status: 'todo',
-    priority: 'medium',
-    createdAt: '2025-11-08',
-  },
-  // Backlog
-  {
-    id: '8',
-    title: 'Unit 테스트 작성',
-    description: 'Jest 기반 테스트 커버리지 80% 이상',
-    status: 'backlog',
-    priority: 'low',
-    createdAt: '2025-11-08',
-  },
-  {
-    id: '9',
-    title: 'E2E 테스트',
-    description: 'Playwright로 주요 플로우 테스트',
-    status: 'backlog',
-    priority: 'low',
-    createdAt: '2025-11-08',
-  },
-];
+const API_URL = process.env.NEXT_PUBLIC_KANBAN_API_URL || 'http://localhost:3015/api/kanban/shared';
+const DEFAULT_API_KEY = process.env.NEXT_PUBLIC_KANBAN_API_KEY || '';
+
+// Status mapping between UI and API
+const statusMap: Record<string, 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE'> = {
+  'backlog': 'BACKLOG',
+  'todo': 'TODO',
+  'in-progress': 'IN_PROGRESS',
+  'review': 'REVIEW',
+  'done': 'DONE',
+};
+
+const reverseStatusMap: Record<string, string> = {
+  'BACKLOG': 'backlog',
+  'TODO': 'todo',
+  'IN_PROGRESS': 'in-progress',
+  'REVIEW': 'review',
+  'DONE': 'done',
+};
 
 export default function KanbanPage() {
   const router = useRouter();
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const auth = localStorage.getItem('admin_authenticated');
@@ -108,19 +55,40 @@ export default function KanbanPage() {
     }
     setIsAuthenticated(true);
 
-    // Load tasks from localStorage
-    const savedTasks = localStorage.getItem('kanban_tasks');
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
+    // Load API key from localStorage
+    const savedApiKey = localStorage.getItem('kanban_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
     }
   }, [router]);
 
   useEffect(() => {
-    // Save tasks to localStorage whenever they change
-    if (isAuthenticated) {
-      localStorage.setItem('kanban_tasks', JSON.stringify(tasks));
+    if (isAuthenticated && apiKey) {
+      fetchTasks();
     }
-  }, [tasks, isAuthenticated]);
+  }, [isAuthenticated, apiKey]);
+
+  const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/tasks`, {
+        headers: {
+          'X-API-Key': apiKey,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks');
+      }
+      const data = await response.json();
+      setTasks(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
+      console.error('Error fetching tasks:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const columns = [
     { id: 'backlog', title: 'Backlog', color: 'border-gray-300' },
@@ -143,31 +111,104 @@ export default function KanbanPage() {
     }
   };
 
-  const addTask = (status: string) => {
+  const addTask = async (columnId: string) => {
     if (!newTaskTitle.trim()) return;
 
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: newTaskTitle,
-      status: status as Task['status'],
-      createdAt: new Date().toISOString(),
-    };
+    const apiStatus = statusMap[columnId];
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/tasks`, {
+        method: 'POST',
+        headers: {
+          'X-API-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newTaskTitle,
+          description: newTaskDescription || null,
+        }),
+      });
 
-    setTasks([...tasks, newTask]);
-    setNewTaskTitle('');
-    setIsAddingTask(null);
+      if (!response.ok) {
+        throw new Error('Failed to create task');
+      }
+
+      const newTask = await response.json();
+
+      // Update status if different from TODO
+      if (apiStatus !== 'TODO') {
+        await updateTaskStatus(newTask.id, apiStatus);
+      } else {
+        setTasks([...tasks, newTask]);
+      }
+
+      setNewTaskTitle('');
+      setNewTaskDescription('');
+      setIsAddingTask(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create task');
+      console.error('Error creating task:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+  const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
+    try {
+      const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'X-API-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      const updatedTask = await response.json();
+      setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update task');
+      console.error('Error updating task:', err);
+    }
   };
 
-  const moveTask = (taskId: string, newStatus: Task['status']) => {
-    setTasks(
-      tasks.map(task =>
-        task.id === taskId ? { ...task, status: newStatus } : task
-      )
-    );
+  const deleteTask = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-API-Key': apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete task');
+      }
+
+      setTasks(tasks.filter(task => task.id !== taskId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete task');
+      console.error('Error deleting task:', err);
+    }
+  };
+
+  const moveTask = async (taskId: string, columnId: string) => {
+    const newStatus = statusMap[columnId];
+    await updateTaskStatus(taskId, newStatus);
+  };
+
+  const saveApiKey = () => {
+    localStorage.setItem('kanban_api_key', apiKey);
+    setShowApiKeyInput(false);
+    fetchTasks();
   };
 
   if (!isAuthenticated) {
@@ -194,6 +235,14 @@ export default function KanbanPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">{tasks.length} tasks total</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                API Key
+              </Button>
             </div>
           </div>
         </div>
@@ -201,6 +250,41 @@ export default function KanbanPage() {
 
       {/* Kanban Board */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* API Key Input */}
+        {showApiKeyInput && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+            <h3 className="font-semibold text-gray-900 mb-3">API Key Configuration</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter API Key"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <Button onClick={saveApiKey}>Save</Button>
+              <Button variant="outline" onClick={() => setShowApiKeyInput(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="text-center py-4">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="text-sm text-gray-600 mt-2">Loading...</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {columns.map(column => (
             <div key={column.id} className="flex flex-col">
@@ -209,7 +293,7 @@ export default function KanbanPage() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold text-gray-900">{column.title}</h3>
                   <span className="text-sm text-gray-500">
-                    {tasks.filter(task => task.status === column.id).length}
+                    {tasks.filter(task => reverseStatusMap[task.status] === column.id).length}
                   </span>
                 </div>
                 <button
@@ -231,23 +315,32 @@ export default function KanbanPage() {
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') addTask(column.id);
+                        if (e.key === 'Enter' && !e.shiftKey) addTask(column.id);
                       }}
                       placeholder="Task title..."
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded mb-2"
                       autoFocus
                     />
+                    <textarea
+                      value={newTaskDescription}
+                      onChange={(e) => setNewTaskDescription(e.target.value)}
+                      placeholder="Description (optional)..."
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded mb-2"
+                      rows={2}
+                    />
                     <div className="flex gap-2">
                       <button
                         onClick={() => addTask(column.id)}
                         className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                        disabled={loading}
                       >
-                        Add
+                        {loading ? 'Adding...' : 'Add'}
                       </button>
                       <button
                         onClick={() => {
                           setIsAddingTask(null);
                           setNewTaskTitle('');
+                          setNewTaskDescription('');
                         }}
                         className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
                       >
@@ -259,7 +352,7 @@ export default function KanbanPage() {
 
                 {/* Tasks */}
                 {tasks
-                  .filter(task => task.status === column.id)
+                  .filter(task => reverseStatusMap[task.status] === column.id)
                   .map(task => (
                     <div
                       key={task.id}
@@ -300,7 +393,7 @@ export default function KanbanPage() {
                           .map(col => (
                             <button
                               key={col.id}
-                              onClick={() => moveTask(task.id, col.id as Task['status'])}
+                              onClick={() => moveTask(task.id, col.id)}
                               className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                             >
                               → {col.title}
