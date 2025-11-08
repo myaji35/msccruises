@@ -3,50 +3,46 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, Edit2, Settings } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { ArrowLeft, Plus, Trash2, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Task {
   id: string;
   title: string;
   description?: string | null;
-  status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-  priority?: 'low' | 'medium' | 'high';
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
   createdAt: string;
+  updatedAt: string;
 }
 
-// Use Next.js API route as proxy to avoid CORS issues
 const API_URL = '/api/kanban/tasks';
 const DEFAULT_API_KEY = process.env.NEXT_PUBLIC_KANBAN_API_KEY || '';
 
-// Status mapping between UI and API
-const statusMap: Record<string, 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE'> = {
-  'backlog': 'BACKLOG',
-  'todo': 'TODO',
-  'in-progress': 'IN_PROGRESS',
-  'review': 'REVIEW',
-  'done': 'DONE',
-};
-
-const reverseStatusMap: Record<string, string> = {
-  'BACKLOG': 'backlog',
-  'TODO': 'todo',
-  'IN_PROGRESS': 'in-progress',
-  'REVIEW': 'review',
-  'DONE': 'done',
-};
+const columns = [
+  { id: 'TODO', title: '할 일', bgColor: 'bg-gray-100' },
+  { id: 'IN_PROGRESS', title: '진행 중', bgColor: 'bg-blue-50' },
+  { id: 'DONE', title: '완료', bgColor: 'bg-green-50' },
+] as const;
 
 export default function KanbanPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAddingTask, setIsAddingTask] = useState<string | null>(null);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskDescription, setNewTaskDescription] = useState('');
   const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Add task states
+  const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  // Edit modal states
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editStatus, setEditStatus] = useState<Task['status']>('TODO');
 
   useEffect(() => {
     const auth = localStorage.getItem('admin_authenticated');
@@ -56,7 +52,6 @@ export default function KanbanPage() {
     }
     setIsAuthenticated(true);
 
-    // Load API key from localStorage
     const savedApiKey = localStorage.getItem('kanban_api_key');
     if (savedApiKey) {
       setApiKey(savedApiKey);
@@ -85,38 +80,12 @@ export default function KanbanPage() {
       setTasks(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
-      console.error('Error fetching tasks:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const columns = [
-    { id: 'backlog', title: 'Backlog', color: 'border-gray-300' },
-    { id: 'todo', title: 'To Do', color: 'border-blue-300' },
-    { id: 'in-progress', title: 'In Progress', color: 'border-yellow-300' },
-    { id: 'review', title: 'Review', color: 'border-purple-300' },
-    { id: 'done', title: 'Done', color: 'border-green-300' },
-  ];
-
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800 border-red-300';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'low':
-        return 'bg-green-100 text-green-800 border-green-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
-  const addTask = async (columnId: string) => {
-    if (!newTaskTitle.trim()) return;
-
-    const apiStatus = statusMap[columnId];
-    setLoading(true);
+  const createTask = async (title: string, status: Task['status']) => {
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -124,10 +93,7 @@ export default function KanbanPage() {
           'X-API-Key': apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          title: newTaskTitle,
-          description: newTaskDescription || null,
-        }),
+        body: JSON.stringify({ title }),
       });
 
       if (!response.ok) {
@@ -136,21 +102,13 @@ export default function KanbanPage() {
 
       const newTask = await response.json();
 
-      // Update status if different from TODO
-      if (apiStatus !== 'TODO') {
-        await updateTaskStatus(newTask.id, apiStatus);
+      if (status !== 'TODO') {
+        await updateTaskStatus(newTask.id, status);
       } else {
         setTasks([...tasks, newTask]);
       }
-
-      setNewTaskTitle('');
-      setNewTaskDescription('');
-      setIsAddingTask(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create task');
-      console.error('Error creating task:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -162,9 +120,7 @@ export default function KanbanPage() {
           'X-API-Key': apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          status: newStatus,
-        }),
+        body: JSON.stringify({ status: newStatus }),
       });
 
       if (!response.ok) {
@@ -175,12 +131,33 @@ export default function KanbanPage() {
       setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task');
-      console.error('Error updating task:', err);
+    }
+  };
+
+  const updateTask = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      const response = await fetch(`${API_URL}/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'X-API-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      const updatedTask = await response.json();
+      setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update task');
     }
   };
 
   const deleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    if (!confirm('정말 삭제하시겠습니까?')) return;
 
     try {
       const response = await fetch(`${API_URL}/${taskId}`, {
@@ -197,19 +174,62 @@ export default function KanbanPage() {
       setTasks(tasks.filter(task => task.id !== taskId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete task');
-      console.error('Error deleting task:', err);
     }
   };
 
-  const moveTask = async (taskId: string, columnId: string) => {
-    const newStatus = statusMap[columnId];
-    await updateTaskStatus(taskId, newStatus);
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return;
+    }
+
+    const newStatus = destination.droppableId as Task['status'];
+    await updateTaskStatus(draggableId, newStatus);
+  };
+
+  const handleAddTask = async (columnId: string) => {
+    if (!newTaskTitle.trim()) return;
+
+    await createTask(newTaskTitle, columnId as Task['status']);
+    setNewTaskTitle('');
+    setAddingToColumn(null);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setEditTitle(task.title);
+    setEditDescription(task.description || '');
+    setEditStatus(task.status);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTask) return;
+
+    await updateTask(editingTask.id, {
+      title: editTitle,
+      description: editDescription || null,
+      status: editStatus,
+    });
+
+    setEditingTask(null);
   };
 
   const saveApiKey = () => {
     localStorage.setItem('kanban_api_key', apiKey);
     setShowApiKeyInput(false);
     fetchTasks();
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   if (!isAuthenticated) {
@@ -231,11 +251,11 @@ export default function KanbanPage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-[#003366]">Kanban Board</h1>
-                <p className="text-sm text-gray-600">MSC Cruises Project Management</p>
+                <p className="text-sm text-gray-600">Drag & Drop Project Management</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">{tasks.length} tasks total</span>
+              <span className="text-sm text-gray-600">{tasks.length} tasks</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -249,7 +269,6 @@ export default function KanbanPage() {
         </div>
       </header>
 
-      {/* Kanban Board */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* API Key Input */}
         {showApiKeyInput && (
@@ -286,128 +305,192 @@ export default function KanbanPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {columns.map(column => (
-            <div key={column.id} className="flex flex-col">
-              {/* Column Header */}
-              <div className={`bg-white rounded-t-lg border-t-4 ${column.color} p-4 shadow-sm`}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-gray-900">{column.title}</h3>
-                  <span className="text-sm text-gray-500">
-                    {tasks.filter(task => reverseStatusMap[task.status] === column.id).length}
-                  </span>
+        {/* Kanban Board */}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {columns.map(column => (
+              <div key={column.id} className="flex-shrink-0 w-80">
+                <div className={`rounded-lg ${column.bgColor} p-4`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-gray-900">{column.title}</h2>
+                    <span className="text-sm text-gray-600">
+                      {tasks.filter(t => t.status === column.id).length}
+                    </span>
+                  </div>
+
+                  <Droppable droppableId={column.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="min-h-[500px] space-y-2"
+                      >
+                        {tasks
+                          .filter(task => task.status === column.id)
+                          .map((task, index) => (
+                            <Draggable key={task.id} draggableId={task.id} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`group bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
+                                    snapshot.isDragging ? 'ring-2 ring-blue-600' : ''
+                                  }`}
+                                  onClick={() => handleEditTask(task)}
+                                >
+                                  <div className="flex items-start justify-between gap-2 mb-2">
+                                    <h3 className="font-medium text-gray-900 flex-1">
+                                      {task.title}
+                                    </h3>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteTask(task.id);
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+
+                                  {task.description && (
+                                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                                      {task.description}
+                                    </p>
+                                  )}
+
+                                  <p className="text-xs text-gray-500">
+                                    {formatDate(task.updatedAt)}
+                                  </p>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+
+                  {/* Add Task */}
+                  {addingToColumn === column.id ? (
+                    <div className="mt-2 space-y-2">
+                      <textarea
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddTask(column.id);
+                          }
+                          if (e.key === 'Escape') {
+                            setAddingToColumn(null);
+                            setNewTaskTitle('');
+                          }
+                        }}
+                        placeholder="카드 제목 입력..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        rows={2}
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleAddTask(column.id)}>
+                          추가
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setAddingToColumn(null);
+                            setNewTaskTitle('');
+                          }}
+                        >
+                          취소
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setAddingToColumn(column.id)}
+                      className="mt-2 w-full flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-white/50 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      카드 추가
+                    </button>
+                  )}
                 </div>
-                <button
-                  onClick={() => setIsAddingTask(column.id)}
-                  className="w-full flex items-center justify-center gap-1 text-sm text-gray-600 hover:text-gray-900 py-1 border border-dashed border-gray-300 rounded hover:bg-gray-50"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add task
-                </button>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+      </main>
+
+      {/* Edit Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">카드 편집</h2>
+              <button
+                onClick={() => setEditingTask(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  제목
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
 
-              {/* Column Content */}
-              <div className="bg-gray-100 rounded-b-lg p-2 min-h-[500px] space-y-2">
-                {/* Add Task Form */}
-                {isAddingTask === column.id && (
-                  <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
-                    <input
-                      type="text"
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) addTask(column.id);
-                      }}
-                      placeholder="Task title..."
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded mb-2"
-                      autoFocus
-                    />
-                    <textarea
-                      value={newTaskDescription}
-                      onChange={(e) => setNewTaskDescription(e.target.value)}
-                      placeholder="Description (optional)..."
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded mb-2"
-                      rows={2}
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => addTask(column.id)}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                        disabled={loading}
-                      >
-                        {loading ? 'Adding...' : 'Add'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsAddingTask(null);
-                          setNewTaskTitle('');
-                          setNewTaskDescription('');
-                        }}
-                        className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  설명
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
 
-                {/* Tasks */}
-                {tasks
-                  .filter(task => reverseStatusMap[task.status] === column.id)
-                  .map(task => (
-                    <div
-                      key={task.id}
-                      className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h4 className="font-medium text-sm text-gray-900 flex-1">
-                          {task.title}
-                        </h4>
-                        <button
-                          onClick={() => deleteTask(task.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {task.description && (
-                        <p className="text-xs text-gray-600 mb-2">{task.description}</p>
-                      )}
-
-                      {task.priority && (
-                        <div className="mb-2">
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(
-                              task.priority
-                            )}`}
-                          >
-                            {task.priority}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Move buttons */}
-                      <div className="flex gap-1 flex-wrap">
-                        {columns
-                          .filter(col => col.id !== column.id)
-                          .map(col => (
-                            <button
-                              key={col.id}
-                              onClick={() => moveTask(task.id, col.id)}
-                              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                            >
-                              → {col.title}
-                            </button>
-                          ))}
-                      </div>
-                    </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  상태
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as Task['status'])}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {columns.map(col => (
+                    <option key={col.id} value={col.id}>
+                      {col.title}
+                    </option>
                   ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-4">
+                <Button variant="outline" onClick={() => setEditingTask(null)}>
+                  취소
+                </Button>
+                <Button onClick={handleSaveEdit}>저장</Button>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }
