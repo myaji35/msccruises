@@ -37,9 +37,9 @@ export default function MyBookingsPage() {
       // TODO: Load booking history from API
       // For now, using mock data
       setBookingHistory({
-        total_bookings: 0,
-        total_spent: 0,
         bookings: [],
+        total_spent: 0,
+        voyagers_club_points_earned: 0,
       });
     }
   }, [status, session, router]);

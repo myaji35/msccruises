@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,6 +17,7 @@ export async function POST(
     }
 
     const { reason } = await request.json();
+    const { id } = await params;
 
     // TODO: Implement actual cancellation logic
     // 1. Check if booking exists and belongs to user
@@ -27,7 +28,7 @@ export async function POST(
     // 6. Send cancellation confirmation email
 
     // Mock implementation
-    const bookingId = params.id;
+    const bookingId = id;
 
     // Calculate cancellation fee (example: 20% fee)
     const cancellationFee = 0.20;

@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function AdminSettingsPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -18,23 +16,17 @@ export default function AdminSettingsPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if user is authenticated
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto"></div>
-          <p className="mt-4 text-gray-600">로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    router.push("/login");
-    return null;
-  }
+  useEffect(() => {
+    // Check authentication
+    const auth = localStorage.getItem('admin_authenticated');
+    if (auth !== 'true') {
+      router.push('/admin');
+      return;
+    }
+    setIsAuthenticated(true);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +35,14 @@ export default function AdminSettingsPage() {
     // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       setMessage({ type: "error", text: "모든 필드를 입력해주세요" });
+      return;
+    }
+
+    const storedPassword = localStorage.getItem('admin_password') || 'admin123';
+
+    // Check current password
+    if (currentPassword !== storedPassword) {
+      setMessage({ type: "error", text: "현재 비밀번호가 올바르지 않습니다" });
       return;
     }
 
@@ -59,34 +59,24 @@ export default function AdminSettingsPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/user/change-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
-      });
+      // Save new password to localStorage
+      localStorage.setItem('admin_password', newPassword);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage({ type: "success", text: data.message });
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      } else {
-        setMessage({ type: "error", text: data.error || "비밀번호 변경에 실패했습니다" });
-      }
+      setMessage({ type: "success", text: "비밀번호가 성공적으로 변경되었습니다" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (error) {
       console.error("비밀번호 변경 오류:", error);
-      setMessage({ type: "error", text: "서버 오류가 발생했습니다" });
+      setMessage({ type: "error", text: "비밀번호 변경에 실패했습니다" });
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -95,18 +85,13 @@ export default function AdminSettingsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/admin/cruises">
+              <Link href="/admin">
                 <Button variant="outline" size="sm">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   관리자 대시보드
                 </Button>
               </Link>
               <h1 className="text-2xl font-bold text-[#003366]">설정</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                {session?.user?.name || session?.user?.email}
-              </span>
             </div>
           </div>
         </div>
@@ -277,6 +262,16 @@ export default function AdminSettingsPage() {
                 <span>비밀번호는 타인과 공유하지 마세요</span>
               </li>
             </ul>
+          </div>
+
+          {/* Current Password Info */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>현재 패스워드:</strong> {localStorage.getItem('admin_password') || 'admin123'}
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              보안상 실제 운영 환경에서는 패스워드를 표시하지 않는 것이 좋습니다.
+            </p>
           </div>
         </div>
       </main>

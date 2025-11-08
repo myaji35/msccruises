@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { XCircle, ArrowLeft, RefreshCw, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
-export default function PaymentFailPage() {
+function PaymentFailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState("");
@@ -145,5 +145,24 @@ export default function PaymentFailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4"></div>
+        <p className="text-gray-600">로딩 중...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function PaymentFailPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <PaymentFailContent />
+    </Suspense>
   );
 }
