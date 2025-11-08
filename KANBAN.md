@@ -35,6 +35,13 @@
 - [x] 크루즈 관리 (/admin/cruises)
 - [x] SNS 계정 관리 (/admin/sns/accounts)
 - [x] 대시보드 통계 (예약, 수익, 크루즈, 회원)
+- [x] **Kanban 보드 (/admin/kanban)** - 프로젝트 관리
+  - API 통합 (localhost:3015 Kanban MCP Server)
+  - Next.js API 프록시로 CORS 해결
+  - 태스크 CRUD (생성/조회/수정/삭제)
+  - 5개 칼럼 (Backlog, To Do, In Progress, Review, Done)
+  - API 키 설정 UI
+  - 실시간 동기화
 
 #### 인증 & 사용자
 - [x] NextAuth 설정
@@ -179,8 +186,20 @@ _현재 차단된 작업 없음_
 
 ### 1. 관리자 패널
 - **URL**: https://msccruises.du.r.appspot.com/admin
+- **로컬**: http://localhost:3003/admin
 - **로그인**: 패스워드 `admin123`
-- **기능**: 크루즈 관리, SNS 계정, 대시보드, 설정
+- **기능**: 크루즈 관리, SNS 계정, 대시보드, 설정, **Kanban 보드**
+
+### 1-1. Kanban 보드 (신규)
+- **URL**: http://localhost:3003/admin/kanban
+- **API 서버**: localhost:3015 (Kanban MCP Server)
+- **API 키**: UI에서 설정 (Settings 버튼)
+- **기능**:
+  - 프로젝트 태스크 관리
+  - 5단계 워크플로우 (Backlog → To Do → In Progress → Review → Done)
+  - 실시간 API 동기화
+  - 태스크 설명 및 우선순위
+  - Next.js API 프록시로 CORS 해결
 
 ### 2. 예약 시스템
 - 크루즈 검색 → 객실 선택 → 승객 정보 → 결제
@@ -200,8 +219,8 @@ _현재 차단된 작업 없음_
 - **총 Stores**: 5개
 - **총 코드 라인**: ~1,092 lines (stores만)
 - **총 문서**: 10+ MD 파일
-- **API Routes**: 28개
-- **Pages**: 28개
+- **API Routes**: 30개 (Kanban 프록시 2개 추가)
+- **Pages**: 29개 (Kanban 보드 추가)
 
 ---
 
