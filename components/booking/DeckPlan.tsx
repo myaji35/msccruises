@@ -60,9 +60,24 @@ export default function DeckPlan({ selectedCategory, onSelectCabin, selectedCabi
   const [selectedDeck, setSelectedDeck] = useState(8);
   const [zoom, setZoom] = useState(1);
   const [hoveredCabin, setHoveredCabin] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const decks = [6, 7, 8, 9, 10, 11, 12]; // 사용 가능한 덱
   const cabins = generateMockDeck(selectedDeck, selectedCategory);
+
+  // 모바일 감지
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      // 모바일에서는 초기 줌을 더 작게
+      if (window.innerWidth < 768) {
+        setZoom(0.6);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.2, 2));
@@ -95,48 +110,50 @@ export default function DeckPlan({ selectedCategory, onSelectCabin, selectedCabi
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="bg-white rounded-lg shadow-sm p-3 md:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 md:mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-4">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">덱 플랜</h3>
-            <p className="text-sm text-gray-600">원하는 객실을 클릭하여 선택하세요</p>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900">덱 플랜</h3>
+            <p className="text-xs md:text-sm text-gray-600">
+              {isMobile ? '객실을 탭하여 선택' : '원하는 객실을 클릭하여 선택하세요'}
+            </p>
           </div>
 
           {/* Zoom Controls */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleZoomOut}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 rounded-lg transition active:bg-gray-200"
               disabled={zoom <= 0.6}
             >
-              <ZoomOut className="w-5 h-5 text-gray-600" />
+              <ZoomOut className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
             </button>
-            <span className="text-sm text-gray-600 w-12 text-center">
+            <span className="text-xs md:text-sm text-gray-600 w-10 md:w-12 text-center">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={handleZoomIn}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 rounded-lg transition active:bg-gray-200"
               disabled={zoom >= 2}
             >
-              <ZoomIn className="w-5 h-5 text-gray-600" />
+              <ZoomIn className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
             </button>
           </div>
         </div>
 
         {/* Deck Selector */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {decks.map((deck) => (
             <button
               key={deck}
               onClick={() => setSelectedDeck(deck)}
               className={`
-                px-4 py-2 rounded-lg font-medium transition whitespace-nowrap
+                px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition whitespace-nowrap
                 ${selectedDeck === deck
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                 }
               `}
             >
@@ -147,18 +164,18 @@ export default function DeckPlan({ selectedCategory, onSelectCabin, selectedCabi
       </div>
 
       {/* Legend */}
-      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-        <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-300 border border-gray-500 rounded" />
+      <div className="mb-3 md:mb-4 p-2 md:p-3 bg-gray-50 rounded-lg">
+        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm">
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-blue-300 border border-gray-500 rounded" />
             <span className="text-gray-700">선택 가능</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-200 border border-gray-400 rounded" />
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-gray-200 border border-gray-400 rounded" />
             <span className="text-gray-700">예약 완료</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-600 border border-blue-800 rounded" />
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-blue-600 border border-blue-800 rounded" />
             <span className="text-gray-700">현재 선택</span>
           </div>
         </div>
@@ -305,20 +322,20 @@ export default function DeckPlan({ selectedCategory, onSelectCabin, selectedCabi
       )}
 
       {/* Stats */}
-      <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-        <div className="p-3 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600">전체 객실</p>
-          <p className="text-2xl font-bold text-gray-900">{cabins.length}</p>
+      <div className="mt-3 md:mt-4 grid grid-cols-3 gap-2 md:gap-4 text-center">
+        <div className="p-2 md:p-3 bg-gray-50 rounded-lg">
+          <p className="text-xs md:text-sm text-gray-600">전체 객실</p>
+          <p className="text-lg md:text-2xl font-bold text-gray-900">{cabins.length}</p>
         </div>
-        <div className="p-3 bg-green-50 rounded-lg">
-          <p className="text-sm text-green-600">예약 가능</p>
-          <p className="text-2xl font-bold text-green-700">
+        <div className="p-2 md:p-3 bg-green-50 rounded-lg">
+          <p className="text-xs md:text-sm text-green-600">예약 가능</p>
+          <p className="text-lg md:text-2xl font-bold text-green-700">
             {cabins.filter((c) => c.available).length}
           </p>
         </div>
-        <div className="p-3 bg-red-50 rounded-lg">
-          <p className="text-sm text-red-600">예약 완료</p>
-          <p className="text-2xl font-bold text-red-700">
+        <div className="p-2 md:p-3 bg-red-50 rounded-lg">
+          <p className="text-xs md:text-sm text-red-600">예약 완료</p>
+          <p className="text-lg md:text-2xl font-bold text-red-700">
             {cabins.filter((c) => !c.available).length}
           </p>
         </div>

@@ -26,7 +26,7 @@ export default function ProgressIndicator({
 }: ProgressIndicatorProps) {
   return (
     <div className="w-full bg-white shadow-sm border-b">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-2 md:px-4 py-3 md:py-6">
         <div className="flex items-center justify-between">
           {steps.map((step, index) => (
             <React.Fragment key={step.number}>
@@ -37,20 +37,20 @@ export default function ProgressIndicator({
                   disabled={step.number > currentStep}
                   className={`
                     relative flex items-center justify-center
-                    w-12 h-12 rounded-full font-semibold text-lg
+                    w-8 h-8 md:w-12 md:h-12 rounded-full font-semibold text-sm md:text-lg
                     transition-all duration-300
                     ${
                       step.number < currentStep
-                        ? 'bg-green-500 text-white cursor-pointer hover:bg-green-600'
+                        ? 'bg-green-500 text-white cursor-pointer hover:bg-green-600 active:bg-green-700'
                         : step.number === currentStep
-                        ? 'bg-blue-600 text-white ring-4 ring-blue-200'
+                        ? 'bg-blue-600 text-white ring-2 md:ring-4 ring-blue-200'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }
                   `}
                 >
                   {step.number < currentStep ? (
                     <svg
-                      className="w-6 h-6"
+                      className="w-4 h-4 md:w-6 md:h-6"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -67,10 +67,10 @@ export default function ProgressIndicator({
                   )}
                 </button>
 
-                <div className="mt-3 text-center">
+                <div className="mt-1.5 md:mt-3 text-center">
                   <div
                     className={`
-                    text-sm font-medium
+                    text-xs md:text-sm font-medium
                     ${
                       step.number <= currentStep
                         ? 'text-gray-900'
@@ -82,7 +82,7 @@ export default function ProgressIndicator({
                   </div>
                   <div
                     className={`
-                    text-xs mt-1
+                    text-[10px] md:text-xs mt-0.5 md:mt-1 hidden sm:block
                     ${
                       step.number <= currentStep
                         ? 'text-gray-500'
@@ -97,7 +97,7 @@ export default function ProgressIndicator({
 
               {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div className="flex-1 h-1 mx-4 mt-[-60px]">
+                <div className="flex-1 h-0.5 md:h-1 mx-1 md:mx-4 mt-[-40px] md:mt-[-60px]">
                   <div
                     className={`
                     h-full rounded transition-all duration-300

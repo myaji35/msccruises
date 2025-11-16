@@ -75,8 +75,8 @@ export default function PriceSummary() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-      <h3 className="text-xl font-bold mb-4">예약 요약</h3>
+    <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 md:sticky md:top-4">
+      <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">예약 요약</h3>
 
       {/* Cruise Info */}
       <div className="border-b pb-4 mb-4">

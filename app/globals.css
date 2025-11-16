@@ -57,3 +57,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* 스크롤바 숨김 (모바일 최적화) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 터치 활성화 */
+  .touch-action-pan-y {
+    touch-action: pan-y;
+  }
+  .touch-action-pan-x {
+    touch-action: pan-x;
+  }
+}

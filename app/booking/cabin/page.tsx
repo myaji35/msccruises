@@ -368,21 +368,21 @@ export default function CabinSelectionPage() {
 
       {/* Deck Plan Modal */}
       {showDeckPlan && selectedCategory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-3 md:p-4 flex items-center justify-between z-10">
+              <h2 className="text-lg md:text-2xl font-bold text-gray-900">
                 {cabinCategories.find((c) => c.id === selectedCategory)?.name} - 덱 플랜
               </h2>
               <button
                 onClick={() => setShowDeckPlan(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition"
               >
-                <X className="w-6 h-6 text-gray-600" />
+                <X className="w-5 h-5 md:w-6 md:h-6 text-gray-600" />
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-3 md:p-6">
               <DeckPlan
                 selectedCategory={cabinCategories.find((c) => c.id === selectedCategory)?.code || 'inside'}
                 onSelectCabin={handleDeckPlanCabinSelect}
