@@ -37,10 +37,14 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Build files (will be built on GCP)
-.next/
+# Build files - KEEP .next/ for deployment!
+# .next/ is needed for static assets
 out/
 build/
+
+# But ignore cache and other unnecessary files
+.next/cache/
+.next/trace
 
 # Local database
 prisma/dev.db
