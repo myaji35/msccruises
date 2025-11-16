@@ -192,6 +192,123 @@ class CrsApiService {
     return mockCruises;
   }
 
+  // AC4: Update Booking
+  async updateBooking(
+    bookingId: string,
+    updates: Partial<BookingRequest>
+  ): Promise<BookingResponse> {
+    const token = await this.authenticate();
+
+    try {
+      // Mock API call - replace with real CRS API
+      // const response = await fetch(`${this.baseUrl}/v1/bookings/${bookingId}`, {
+      //   method: "PUT",
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify(updates),
+      // });
+
+      // Check modification deadline (7 days before departure)
+      const departureDate = new Date();
+      departureDate.setDate(departureDate.getDate() + 8); // Mock: 8 days from now
+      const modificationDeadline = new Date(departureDate);
+      modificationDeadline.setDate(modificationDeadline.getDate() - 7);
+
+      if (new Date() > modificationDeadline) {
+        throw new CRSError(
+          CRSErrorCode.INVALID_REQUEST,
+          "Modifications not allowed within 7 days of departure",
+          400,
+          false
+        );
+      }
+
+      // Mock response for development
+      const mockResponse: BookingResponse = {
+        booking_id: bookingId,
+        confirmation_number: `MSC${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        cruise_id: updates.cruise_id || "MSC123456",
+        cabin_category: updates.cabin_category || "balcony",
+        status: "confirmed",
+        total_price: 2499,
+        created_at: new Date().toISOString(),
+      };
+
+      // Log modification for audit trail
+      console.log(`[CRS] Booking ${bookingId} updated:`, updates);
+
+      return mockResponse;
+    } catch (error: any) {
+      logError(error, { context: "Update Booking", bookingId, updates });
+      throw error;
+    }
+  }
+
+  // AC5: Cancel Booking
+  async cancelBooking(bookingId: string): Promise<{
+    booking_id: string;
+    status: string;
+    cancellation_fee: number;
+    refund_amount: number;
+    refund_status: string;
+  }> {
+    const token = await this.authenticate();
+
+    try {
+      // Mock API call - replace with real CRS API
+      // const response = await fetch(`${this.baseUrl}/v1/bookings/${bookingId}`, {
+      //   method: "DELETE",
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // });
+
+      // Calculate cancellation fee based on time until departure
+      const daysUntilDeparture = 30; // Mock value
+      let cancellationFee = 0;
+      let refundPercentage = 100;
+
+      if (daysUntilDeparture < 7) {
+        cancellationFee = 500; // $500 fee
+        refundPercentage = 50; // 50% refund
+      } else if (daysUntilDeparture < 14) {
+        cancellationFee = 250; // $250 fee
+        refundPercentage = 75; // 75% refund
+      } else if (daysUntilDeparture < 30) {
+        cancellationFee = 100; // $100 fee
+        refundPercentage = 90; // 90% refund
+      }
+
+      const originalAmount = 2299; // Mock original booking amount
+      const refundAmount = (originalAmount * refundPercentage) / 100 - cancellationFee;
+
+      // Mock response for development
+      const mockResponse = {
+        booking_id: bookingId,
+        status: "cancelled",
+        cancellation_fee: cancellationFee,
+        refund_amount: refundAmount,
+        refund_status: "pending",
+      };
+
+      // Log cancellation for audit trail
+      console.log(`[CRS] Booking ${bookingId} cancelled. Refund: $${refundAmount}`);
+
+      // AC5: Add to refund queue (mock)
+      // In production: await refundQueue.add({ bookingId, refundAmount });
+
+      // AC5: Send cancellation email (mock)
+      // In production: await emailService.sendCancellationConfirmation(bookingId);
+
+      return mockResponse;
+    } catch (error: any) {
+      logError(error, { context: "Cancel Booking", bookingId });
+      throw error;
+    }
+  }
+
   // Health check
   async healthCheck(): Promise<boolean> {
     try {

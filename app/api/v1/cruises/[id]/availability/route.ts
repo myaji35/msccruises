@@ -1,100 +1,64 @@
+// Story 001 - AC2: Real-time Availability Check
+// GET /api/v1/cruises/{id}/availability
+// Response time target: < 500ms
+// Redis caching: TTL 5 minutes
+
 import { NextRequest, NextResponse } from "next/server";
 import { crsApiService } from "@/services/crs-api.service";
 
-// In-memory cache (AC2: Redis 캐싱 요구사항 - 프로덕션에서는 Redis로 교체)
-const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const startTime = Date.now();
+  const cruiseId = params.id;
 
   try {
-    const { id: cruiseId } = await params;
+    // AC2: Call CRS API with < 500ms target
+    const availability = await crsApiService.getAvailability(cruiseId);
 
-    if (!cruiseId) {
-      return NextResponse.json(
-        { error: "Cruise ID is required" },
-        { status: 400 }
+    const responseTime = Date.now() - startTime;
+    console.log(`[CRS Availability] Response time: ${responseTime}ms`);
+
+    // AC2: Warn if response time exceeds target
+    if (responseTime > 500) {
+      console.warn(
+        `[Performance Warning] Availability check took ${responseTime}ms (target: <500ms)`
       );
     }
 
-    // Check cache first (AC2: TTL 5분)
-    const cached = cache.get(cruiseId);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      const responseTime = Date.now() - startTime;
-      console.log(`[Cache Hit] Availability for ${cruiseId} - ${responseTime}ms`);
-
-      return NextResponse.json({
-        ...cached.data,
-        _meta: {
-          cached: true,
+    return NextResponse.json(
+      {
+        success: true,
+        data: availability,
+        meta: {
           response_time_ms: responseTime,
+          cached: false, // TODO: Implement Redis caching
+          timestamp: new Date().toISOString(),
         },
-      });
-    }
-
-    // Call CRS API
-    const availability = await crsApiService.getAvailability(cruiseId);
-
-    // Store in cache
-    cache.set(cruiseId, {
-      data: availability,
-      timestamp: Date.now(),
-    });
-
-    const responseTime = Date.now() - startTime;
-
-    // AC2: 응답 시간 < 500ms 확인
-    if (responseTime > 500) {
-      console.warn(`[Performance Warning] Availability query took ${responseTime}ms (> 500ms)`);
-    } else {
-      console.log(`[Success] Availability for ${cruiseId} - ${responseTime}ms`);
-    }
-
-    return NextResponse.json({
-      ...availability,
-      _meta: {
-        cached: false,
-        response_time_ms: responseTime,
       },
-    });
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "public, max-age=300", // 5 minutes
+        },
+      }
+    );
   } catch (error: any) {
-    const responseTime = Date.now() - startTime;
-    console.error("[Error] Failed to fetch availability:", error);
+    console.error("[CRS Availability Error]", error);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch cruise availability",
-        code: "CRS_AVAILABILITY_ERROR",
-        message: error.message,
-        _meta: {
-          response_time_ms: responseTime,
+        success: false,
+        error: {
+          code: error.code || "AVAILABILITY_ERROR",
+          message: error.message || "Failed to fetch availability",
         },
       },
-      { status: 500 }
+      { status: error.statusCode || 500 }
     );
-  }
-}
-
-// Health check endpoint (AC1)
-export async function HEAD(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    await params; // Consume params even if not used
-    // Quick availability check without full data
-    const isHealthy = await crsApiService.healthCheck();
-
-    if (isHealthy) {
-      return new NextResponse(null, { status: 200 });
-    } else {
-      return new NextResponse(null, { status: 503 });
-    }
-  } catch (error) {
-    return new NextResponse(null, { status: 503 });
   }
 }
