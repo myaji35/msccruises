@@ -92,6 +92,7 @@
   "/booking/confirmation/page": "app/booking/confirmation/page.js",
   "/booking/extras/page": "app/booking/extras/page.js",
   "/booking/group/page": "app/booking/group/page.js",
+  "/booking/passengers/page": "app/booking/passengers/page.js",
   "/booking/search/page": "app/booking/search/page.js",
   "/bookings/page": "app/bookings/page.js",
   "/compare/page": "app/compare/page.js",

@@ -685,6 +685,12 @@
       "namedRegex": "^/booking/group(?:/)?$"
     },
     {
+      "page": "/booking/passengers",
+      "regex": "^/booking/passengers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/booking/passengers(?:/)?$"
+    },
+    {
       "page": "/booking/search",
       "regex": "^/booking/search(?:/)?$",
       "routeKeys": {},

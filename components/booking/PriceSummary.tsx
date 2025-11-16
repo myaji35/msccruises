@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useBookingStore } from '@/store/booking-store';
+import { Tag, Check, X, Loader2 } from 'lucide-react';
 
 export default function PriceSummary() {
   const {
@@ -14,10 +15,60 @@ export default function PriceSummary() {
     promoCode,
     promoDiscount,
     totalPrice,
+    setPromoCode,
+    setPromoDiscount,
   } = useBookingStore();
+
+  const [promoInput, setPromoInput] = useState('');
+  const [promoStatus, setPromoStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+  const [promoMessage, setPromoMessage] = useState('');
 
   const cabinTotal = basePrice * numCabins;
   const subtotal = cabinTotal + extrasTotal;
+
+  const handleApplyPromo = async () => {
+    if (!promoInput.trim()) return;
+
+    setPromoStatus('validating');
+    setPromoMessage('');
+
+    try {
+      // Story 002 프로모션 검증 API 호출
+      const response = await fetch('/api/v1/promotions/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: promoInput.toUpperCase(),
+          cruiseId: selectedCruise?.id,
+          cabinCategory: selectedCabin?.category,
+          currentPrice: subtotal,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        setPromoStatus('valid');
+        setPromoCode(promoInput.toUpperCase());
+        setPromoDiscount(data.discountAmount);
+        setPromoMessage(`${data.discountAmount.toLocaleString()}원 할인 적용됨`);
+      } else {
+        setPromoStatus('invalid');
+        setPromoMessage(data.error || '유효하지 않은 프로모션 코드입니다');
+      }
+    } catch (error) {
+      setPromoStatus('invalid');
+      setPromoMessage('프로모션 코드 검증 중 오류가 발생했습니다');
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoInput('');
+    setPromoCode('');
+    setPromoDiscount(0);
+    setPromoStatus('idle');
+    setPromoMessage('');
+  };
 
   if (!selectedCruise) {
     return null;
@@ -92,6 +143,59 @@ export default function PriceSummary() {
           })}
         </div>
       )}
+
+      {/* Promo Code Input */}
+      <div className="border-b pb-4 mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">프로모션 코드</label>
+        {!promoCode ? (
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                onKeyPress={(e) => e.key === 'Enter' && handleApplyPromo()}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase"
+                placeholder="코드 입력"
+                disabled={promoStatus === 'validating'}
+              />
+            </div>
+            <button
+              onClick={handleApplyPromo}
+              disabled={!promoInput.trim() || promoStatus === 'validating'}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
+            >
+              {promoStatus === 'validating' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  확인중
+                </>
+              ) : (
+                '적용'
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-green-800">{promoCode}</span>
+            </div>
+            <button
+              onClick={handleRemovePromo}
+              className="p-1 hover:bg-green-100 rounded transition"
+            >
+              <X className="w-4 h-4 text-green-600" />
+            </button>
+          </div>
+        )}
+        {promoMessage && (
+          <p className={`mt-2 text-sm ${promoStatus === 'valid' ? 'text-green-600' : 'text-red-600'}`}>
+            {promoMessage}
+          </p>
+        )}
+      </div>
 
       {/* Price Breakdown */}
       <div className="space-y-2">
