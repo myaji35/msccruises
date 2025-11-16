@@ -119,6 +119,14 @@
       "namedRegex": "^/api/admin/pricing\\-rules/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
+      "page": "/api/admin/promotions/[id]",
+      "regex": "^/api/admin/promotions/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/promotions/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/admin/sns/accounts/[id]",
       "regex": "^/api/admin/sns/accounts/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -469,6 +477,12 @@
       "namedRegex": "^/api/admin/pricing\\-rules(?:/)?$"
     },
     {
+      "page": "/api/admin/promotions",
+      "regex": "^/api/admin/promotions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/promotions(?:/)?$"
+    },
+    {
       "page": "/api/admin/sns/accounts",
       "regex": "^/api/admin/sns/accounts(?:/)?$",
       "routeKeys": {},
@@ -707,6 +721,12 @@
       "regex": "^/compare(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/compare(?:/)?$"
+    },
+    {
+      "page": "/dashboard/admin/pricing",
+      "regex": "^/dashboard/admin/pricing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/admin/pricing(?:/)?$"
     },
     {
       "page": "/dashboard/bookings/payment",
