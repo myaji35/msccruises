@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/store/booking-store';
 import ProgressIndicator from '@/components/booking/ProgressIndicator';
 import PriceSummary from '@/components/booking/PriceSummary';
-import { Bed, Users, Eye, Waves, Crown, Check, ChevronRight } from 'lucide-react';
+import DeckPlan from '@/components/booking/DeckPlan';
+import { Bed, Users, Eye, Waves, Crown, Check, ChevronRight, Map, X } from 'lucide-react';
 import type { CabinOption } from '@/types/booking.types';
 
 // Icon mapping for categories
@@ -36,6 +37,8 @@ export default function CabinSelectionPage() {
   } = useBookingStore();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCabinNumber, setSelectedCabinNumber] = useState<string | undefined>(undefined);
+  const [showDeckPlan, setShowDeckPlan] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cabinCategories, setCabinCategories] = useState<any[]>([]);
   const [fetchingCategories, setFetchingCategories] = useState(true);
@@ -66,7 +69,7 @@ export default function CabinSelectionPage() {
     }
   }, [selectedCruise]);
 
-  const handleSelectCabin = async (category: any) => {
+  const handleSelectCabin = async (category: any, cabinNumber?: string, deckNumber?: number) => {
     if (!selectedCruise) return;
 
     setLoading(true);
@@ -98,8 +101,9 @@ export default function CabinSelectionPage() {
         description: category.description || '',
         price: finalPrice,
         features: category.features || [],
-        available: true, // Mock availability
-        deckNumber: undefined,
+        available: true,
+        deckNumber: deckNumber,
+        cabinNumber: cabinNumber,
       };
 
       selectCabin(cabinOption);
@@ -121,7 +125,8 @@ export default function CabinSelectionPage() {
         price: selectedCruise.startingPrice * category.priceMultiplier,
         features: category.features || [],
         available: true,
-        deckNumber: undefined,
+        deckNumber: deckNumber,
+        cabinNumber: cabinNumber,
       };
 
       selectCabin(cabinOption);
@@ -131,6 +136,14 @@ export default function CabinSelectionPage() {
         goToNextStep();
         router.push('/booking/extras');
       }, 500);
+    }
+  };
+
+  const handleDeckPlanCabinSelect = (cabin: any) => {
+    setSelectedCabinNumber(cabin.number);
+    const category = cabinCategories.find((c) => c.code === selectedCategory);
+    if (category) {
+      handleSelectCabin(category, cabin.number, cabin.deck);
     }
   };
 
@@ -289,33 +302,46 @@ export default function CabinSelectionPage() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectCabin(cabin);
-                        }}
-                        disabled={loading}
-                        className={`
-                          w-full py-3 rounded-lg font-semibold transition-colors
-                          ${isSelected
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }
-                          disabled:opacity-50 disabled:cursor-not-allowed
-                        `}
-                      >
-                        {loading && isSelected ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            처리 중...
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center gap-2">
-                            이 객실 선택
-                            <ChevronRight className="w-4 h-4" />
-                          </span>
-                        )}
-                      </button>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCategory(cabin.id);
+                            setShowDeckPlan(true);
+                          }}
+                          className="py-3 rounded-lg font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center justify-center gap-2"
+                        >
+                          <Map className="w-4 h-4" />
+                          덱 플랜
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectCabin(cabin);
+                          }}
+                          disabled={loading}
+                          className={`
+                            py-3 rounded-lg font-semibold transition-colors
+                            ${isSelected
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                          `}
+                        >
+                          {loading && isSelected ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              처리 중...
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center gap-2">
+                              바로 선택
+                              <ChevronRight className="w-4 h-4" />
+                            </span>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -339,6 +365,33 @@ export default function CabinSelectionPage() {
           </div>
         </div>
       </div>
+
+      {/* Deck Plan Modal */}
+      {showDeckPlan && selectedCategory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {cabinCategories.find((c) => c.id === selectedCategory)?.name} - 덱 플랜
+              </h2>
+              <button
+                onClick={() => setShowDeckPlan(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <DeckPlan
+                selectedCategory={cabinCategories.find((c) => c.id === selectedCategory)?.code || 'inside'}
+                onSelectCabin={handleDeckPlanCabinSelect}
+                selectedCabinNumber={selectedCabinNumber}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

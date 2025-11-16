@@ -42,6 +42,7 @@ export interface CabinOption {
   amenities?: string[];
   recommended?: boolean;
   deckNumber?: number;
+  cabinNumber?: string;
 }
 
 export interface Extra {
