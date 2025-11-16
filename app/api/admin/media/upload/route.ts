@@ -7,6 +7,18 @@ import { existsSync } from "fs";
 
 export async function POST(request: NextRequest) {
   try {
+    // Production: File upload not supported on App Engine
+    // Use Google Cloud Storage instead
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        {
+          error: "File upload is not available in production environment",
+          message: "Please contact administrator to set up Google Cloud Storage for file uploads"
+        },
+        { status: 501 } // Not Implemented
+      );
+    }
+
     // Check authentication (개발 모드에서는 우회)
     const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -65,8 +77,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = join(process.cwd(), "public", "uploads", "cruises");
+    // App Engine: Use /tmp directory (ephemeral storage)
+    // For production, this should use Google Cloud Storage
+    const uploadDir = process.env.NODE_ENV === "production"
+      ? join("/tmp", "uploads", "cruises")
+      : join(process.cwd(), "public", "uploads", "cruises");
+
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
