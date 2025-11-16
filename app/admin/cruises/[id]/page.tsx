@@ -59,7 +59,15 @@ export default function CruiseDetailPage({ params }: { params: Promise<{ id: str
       const response = await fetch(`/api/admin/cruises/${id}`);
       if (!response.ok) throw new Error("Failed to fetch cruise");
       const data = await response.json();
-      setCruise(data.cruise);
+
+      // Transform API response to match client interface
+      const cruise = data.cruise;
+      const transformedCruise = {
+        ...cruise,
+        itineraries: cruise.cruiseItineraries || [],
+        flights: cruise.flightItineraries || []
+      };
+      setCruise(transformedCruise);
     } catch (error) {
       console.error("Failed to fetch cruise:", error);
       alert("크루즈 정보를 불러오는데 실패했습니다.");

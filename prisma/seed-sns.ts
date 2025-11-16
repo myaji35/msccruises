@@ -3,9 +3,13 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding SNS test accounts...');
+  console.log('🔗 Seeding SNS Accounts and Rules...');
 
-  // Find admin user (or create a test user)
+  // 1년 후까지 유효한 토큰
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+  // Create or find an admin user
   let adminUser = await prisma.user.findFirst({
     where: { email: 'admin@msccruises.com' },
   });
@@ -15,46 +19,70 @@ async function main() {
       data: {
         email: 'admin@msccruises.com',
         name: 'MSC Admin',
-        userType: 'customer', // In real scenario, this would be 'admin'
+        userType: 'customer', // Change to admin type if you have it
       },
     });
-    console.log('✅ Test admin user created');
+    console.log('  ✓ Created admin user');
   }
 
-  // Create SNS accounts
+  // SNS Accounts to seed
   const snsAccounts = [
     {
       userId: adminUser.id,
       platform: 'facebook',
-      accountId: '@MSCCruisesOfficial',
-      accessToken: 'fb_test_token_' + Math.random().toString(36).substring(7),
+      accountName: 'MSC Cruises Korea',
+      accountId: 'msccruises_kr',
+      accessToken: 'fake_facebook_access_token_' + Math.random().toString(36).substring(7),
+      refreshToken: 'fake_facebook_refresh_token_' + Math.random().toString(36).substring(7),
+      tokenExpiresAt: oneYearFromNow,
       isActive: true,
     },
     {
       userId: adminUser.id,
       platform: 'instagram',
-      accountId: '@msc_cruises',
-      accessToken: 'ig_test_token_' + Math.random().toString(36).substring(7),
+      accountName: '@msccruises_korea',
+      accountId: 'msccruises_korea',
+      accessToken: 'fake_instagram_access_token_' + Math.random().toString(36).substring(7),
+      refreshToken: 'fake_instagram_refresh_token_' + Math.random().toString(36).substring(7),
+      tokenExpiresAt: oneYearFromNow,
       isActive: true,
     },
     {
       userId: adminUser.id,
-      platform: 'tiktok',
-      accountId: '@msccruises',
-      accessToken: 'tt_test_token_' + Math.random().toString(36).substring(7),
+      platform: 'twitter',
+      accountName: '@MSCCruisesKR',
+      accountId: 'msccruises_kr',
+      accessToken: 'fake_twitter_access_token_' + Math.random().toString(36).substring(7),
+      refreshToken: 'fake_twitter_refresh_token_' + Math.random().toString(36).substring(7),
+      tokenExpiresAt: oneYearFromNow,
       isActive: true,
     },
     {
       userId: adminUser.id,
-      platform: 'threads',
-      accountId: '@msc.cruises',
-      accessToken: 'th_test_token_' + Math.random().toString(36).substring(7),
-      isActive: false, // One inactive account for testing
+      platform: 'kakao',
+      accountName: 'MSC크루즈',
+      accountId: 'msccruises',
+      accessToken: 'fake_kakao_access_token_' + Math.random().toString(36).substring(7),
+      refreshToken: 'fake_kakao_refresh_token_' + Math.random().toString(36).substring(7),
+      tokenExpiresAt: oneYearFromNow,
+      isActive: true,
+    },
+    {
+      userId: adminUser.id,
+      platform: 'naver',
+      accountName: 'MSC크루즈코리아',
+      accountId: 'msccruises_kr',
+      accessToken: 'fake_naver_access_token_' + Math.random().toString(36).substring(7),
+      refreshToken: 'fake_naver_refresh_token_' + Math.random().toString(36).substring(7),
+      tokenExpiresAt: oneYearFromNow,
+      isActive: true,
     },
   ];
 
+  // Create SNS accounts
+  const createdAccounts: { [key: string]: any } = {};
   for (const account of snsAccounts) {
-    await prisma.snsAccount.upsert({
+    const existing = await prisma.snsAccount.findUnique({
       where: {
         userId_platform_accountId: {
           userId: account.userId,
@@ -62,68 +90,151 @@ async function main() {
           accountId: account.accountId,
         },
       },
-      update: {},
-      create: account,
     });
+
+    if (existing) {
+      createdAccounts[account.platform] = existing;
+      console.log(`  ⏭  Skipped ${account.platform} (already exists)`);
+    } else {
+      const created = await prisma.snsAccount.create({
+        data: account,
+      });
+      createdAccounts[account.platform] = created;
+      console.log(`  ✓ Created ${account.platform} account: ${account.accountName}`);
+    }
   }
 
-  console.log('✅ SNS accounts created');
+  // Create Auto-Post Rules
+  const autoPostRules = [
+    {
+      name: '프로모션 할인 → Facebook 자동 포스팅',
+      description: '새로운 패키지 할인이 생성되면 Facebook에 자동 포스팅',
+      contentType: 'packageDiscount',
+      snsAccountId: createdAccounts['facebook'].id,
+      template: `🎉 특별 할인 이벤트! 🎉
 
-  // Create sample scheduled posts
-  const cruise = await prisma.cruise.findFirst({
-    where: { featured: true },
-  });
+{name}
+{description}
 
-  if (cruise) {
-    const fbAccount = await prisma.snsAccount.findFirst({
-      where: { platform: 'facebook', userId: adminUser.id },
+💰 할인율: {discount}
+📅 유효기간: {validUntil}까지
+
+지금 바로 예약하세요!
+👉 https://msccruises.co.kr`,
+      hashtagTemplate: '#MSC크루즈 #크루즈여행 #특별할인 #여행 #패키지할인',
+      postImmediately: true,
+      isActive: true,
+      createdBy: adminUser.id,
+    },
+    {
+      name: '프로모션 할인 → Instagram 자동 포스팅',
+      description: '새로운 패키지 할인이 생성되면 Instagram에 자동 포스팅',
+      contentType: 'packageDiscount',
+      snsAccountId: createdAccounts['instagram'].id,
+      template: `✨ {name} ✨
+
+{description}
+
+💝 {discount} 할인
+⏰ {validUntil}까지
+
+Link in bio 👆`,
+      hashtagTemplate: '#MSC크루즈 #크루즈 #여행 #할인 #특가 #바다여행 #럭셔리여행',
+      postImmediately: false,
+      scheduleDelayMinutes: 30,
+      isActive: true,
+      createdBy: adminUser.id,
+    },
+    {
+      name: '새 목적지 → Instagram 자동 포스팅',
+      description: '새로운 크루즈 목적지가 추가되면 Instagram에 자동 포스팅',
+      contentType: 'destination',
+      snsAccountId: createdAccounts['instagram'].id,
+      template: `🌍 새로운 여행지 소개 🌍
+
+{name}
+{description}
+
+당신의 꿈의 크루즈 여행을 시작하세요! ⚓`,
+      hashtagTemplate: '#MSC크루즈 #{name} #크루즈여행 #세계여행 #여행지추천',
+      postImmediately: true,
+      isActive: true,
+      createdBy: adminUser.id,
+    },
+    {
+      name: '새 목적지 → Twitter 자동 포스팅',
+      description: '새로운 크루즈 목적지가 추가되면 Twitter에 자동 포스팅',
+      contentType: 'destination',
+      snsAccountId: createdAccounts['twitter'].id,
+      template: `🚢 New Destination: {name}
+
+{description}
+
+Book now: https://msccruises.co.kr`,
+      hashtagTemplate: '#MSCCruises #{name} #CruiseTravel #Travel',
+      postImmediately: true,
+      isActive: true,
+      createdBy: adminUser.id,
+    },
+    {
+      name: '새 크루즈 상품 → Facebook 자동 포스팅',
+      description: '새로운 크루즈 일정이 추가되면 Facebook에 자동 포스팅',
+      contentType: 'cruise',
+      snsAccountId: createdAccounts['facebook'].id,
+      template: `⚓ 신규 크루즈 일정 공개! ⚓
+
+{name}
+{description}
+
+🚢 선박: {shipName}
+📍 출발항: {departurePort}
+📅 기간: {durationDays}일
+💵 시작가: {startingPrice}원~
+
+지금 바로 예약하세요!`,
+      hashtagTemplate: '#MSC크루즈 #크루즈여행 #신규일정 #{shipName}',
+      postImmediately: false,
+      scheduleDelayMinutes: 60,
+      isActive: true,
+      createdBy: adminUser.id,
+    },
+  ];
+
+  for (const rule of autoPostRules) {
+    const existing = await prisma.snsAutoPostRule.findFirst({
+      where: {
+        name: rule.name,
+        contentType: rule.contentType,
+        snsAccountId: rule.snsAccountId,
+      },
     });
 
-    if (fbAccount) {
-      await prisma.snsPost.create({
-        data: {
-          cruiseId: cruise.id,
-          snsAccountId: fbAccount.id,
-          platform: 'facebook',
-          content: `🚢 ✨ Discover Paradise on the High Seas! ✨🚢
-
-Join us on the magnificent ${cruise.shipName} for an unforgettable ${cruise.durationDays}-day Caribbean adventure!
-
-🌴 ${cruise.name}
-💰 Starting from just $${cruise.startingPrice}
-📍 Departing from ${cruise.departurePort}
-
-Experience:
-🏖️ Stunning tropical islands
-🍽️ World-class dining
-🎭 Broadway-style entertainment
-💆 Luxury spa & relaxation
-
-Book now and make memories that last a lifetime! 🌊
-
-#MSCCruises #CaribbeanCruise #TravelGoals #VacationMode #CruiseLife #Paradise`,
-          hashtags: '#MSCCruises,#CaribbeanCruise,#TravelGoals,#VacationMode',
-          status: 'scheduled',
-          scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-          createdBy: adminUser.id,
-        },
+    if (existing) {
+      console.log(`  ⏭  Skipped rule: ${rule.name}`);
+    } else {
+      await prisma.snsAutoPostRule.create({
+        data: rule,
       });
-
-      console.log('✅ Sample scheduled post created');
+      console.log(`  ✓ Created auto-post rule: ${rule.name}`);
     }
   }
 
   console.log('\n📊 Summary:');
   console.log('========================================');
-  console.log('✅ 4개의 SNS 테스트 계정 생성');
-  console.log('  - Facebook: @MSCCruisesOfficial (활성)');
-  console.log('  - Instagram: @msc_cruises (활성)');
-  console.log('  - TikTok: @msccruises (활성)');
-  console.log('  - Threads: @msc.cruises (비활성)');
-  console.log('\n✅ 1개의 예약된 포스트 생성');
+  console.log('✅ SNS 계정 생성 완료:');
+  console.log('  - Facebook: MSC Cruises Korea');
+  console.log('  - Instagram: @msccruises_korea');
+  console.log('  - Twitter: @MSCCruisesKR');
+  console.log('  - Kakao: MSC크루즈');
+  console.log('  - Naver: MSC크루즈코리아');
+  console.log('\n✅ 자동 포스팅 규칙 생성 완료:');
+  console.log('  - 프로모션/할인 → Facebook, Instagram');
+  console.log('  - 새 목적지 → Instagram, Twitter');
+  console.log('  - 새 크루즈 → Facebook');
   console.log('========================================');
-  console.log('\n🔗 Test URL:');
-  console.log('http://localhost:3000/admin/sns/accounts');
+  console.log('\n🔗 Admin URLs:');
+  console.log('  http://localhost:3000/admin/sns-accounts');
+  console.log('  http://localhost:3000/admin/sns-posts');
   console.log('========================================\n');
 }
 

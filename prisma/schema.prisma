@@ -126,9 +126,16 @@ model Booking {
   partnerId       String?
   partnerCommission Float?
 
+  // Group booking info
+  groupBookingId  String?
+  isGroupLeader   Boolean  @default(false)
+
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   partner         PartnerInfo? @relation(fields: [partnerId], references: [id])
+  groupBooking    GroupBooking? @relation(fields: [groupBookingId], references: [id])
   passengers      Passenger[]
+
+  @@index([groupBookingId])
 }
 
 model Passenger {
@@ -147,24 +154,34 @@ model Passenger {
 
 // Cruise Product Model
 model Cruise {
-  id              String   @id @default(cuid())
-  name            String
-  shipName        String
-  description     String?
-  departurePort   String
-  destinations    String   // JSON array of destinations
-  durationDays    Int
-  startingPrice   Float
-  currency        String   @default("USD")
-  status          String   @default("active") // "active", "inactive", "draft"
-  featured        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  name                String
+  shipName            String
+  description         String?
+  departurePort       String
+  destinations        String    // JSON array of destinations
+  durationDays        Int
+  startingPrice       Float
+  originalPrice       Float?    // 원래 가격 (할인 표시용)
+  currency            String    @default("USD")
+  status              String    @default("active") // "active", "inactive", "draft"
+  featured            Boolean   @default(false)
 
-  media           CruiseMedia[]
-  cruiseItineraries CruiseItinerary[]
-  flightItineraries FlightItinerary[]
-  snsPosts        SnsPost[]
+  // 출발 일정 관련 필드
+  departureDate       DateTime? // 출발일
+  returnDate          DateTime? // 귀국일
+  promotionTag        String?   // 프로모션 태그 ("발렌타인 특가", "얼리버드" 등)
+  bookingStatus       String?   @default("일반") // "출확", "집중모객", "마감", "일반"
+  currentParticipants Int?      @default(0) // 현재 참가자 수
+  maxParticipants     Int?      // 최대 참가자 수
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  media               CruiseMedia[]
+  cruiseItineraries   CruiseItinerary[]
+  flightItineraries   FlightItinerary[]
+  snsPosts            SnsPost[]
 }
 
 // Cruise Media Model (Images & Videos)
@@ -223,8 +240,9 @@ model CruiseItinerary {
 model SnsAccount {
   id              String   @id @default(cuid())
   userId          String   // Admin or Partner who owns this account
-  platform        String   // "facebook", "instagram", "tiktok", "threads"
-  accountId       String   // Platform-specific account ID or username
+  platform        String   // "facebook", "instagram", "twitter", "kakao", "naver"
+  accountName     String?  // Display name or username (optional for backward compatibility)
+  accountId       String   // Platform-specific account ID
   accessToken     String?  // Encrypted access token
   refreshToken    String?  // Encrypted refresh token
   tokenExpiresAt  DateTime?
@@ -234,36 +252,81 @@ model SnsAccount {
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   posts           SnsPost[]
+  autoPostRules   SnsAutoPostRule[]
 
   @@unique([userId, platform, accountId])
   @@index([userId])
+  @@index([platform])
 }
 
-// SNS Post Model (scheduled posts)
+// SNS Post Model (supports multiple content types)
 model SnsPost {
   id              String   @id @default(cuid())
-  cruiseId        String
+
+  // Polymorphic content reference
+  contentType     String   @default("cruise") // "cruise", "packageDiscount", "destination", "manual"
+  contentId       String?  // ID of the content (null for manual posts)
+
   snsAccountId    String
-  platform        String   // "facebook", "instagram", "tiktok", "threads"
+  platform        String   // "facebook", "instagram", "twitter", "kakao", "naver"
   content         String   // Post text content
   mediaUrls       String?  // JSON array of media URLs
   hashtags        String?  // Comma-separated hashtags
-  status          String   @default("scheduled") // "scheduled", "confirmed", "posted", "failed"
-  scheduledAt     DateTime // When to post
+
+  status          String   @default("draft") // "draft", "scheduled", "posting", "posted", "failed"
+  scheduledAt     DateTime? // When to post (null = post immediately)
   postedAt        DateTime?
   platformPostId  String?  // ID from the platform after posting
   errorMessage    String?  // Error message if failed
+
   createdBy       String   // User ID who created this post
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  cruise          Cruise   @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
+  // Legacy cruise relation (deprecated but kept for backward compatibility)
+  cruiseId        String?
+  cruise          Cruise?  @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
+
   snsAccount      SnsAccount @relation(fields: [snsAccountId], references: [id], onDelete: Cascade)
 
+  @@index([contentType, contentId])
   @@index([cruiseId])
   @@index([snsAccountId])
   @@index([status])
   @@index([scheduledAt])
+}
+
+// SNS Auto Post Rule Model (auto-posting configuration)
+model SnsAutoPostRule {
+  id              String   @id @default(cuid())
+  name            String   // "프로모션 자동 포스팅"
+  description     String?
+
+  // What content triggers auto-posting
+  contentType     String   // "packageDiscount", "destination", "cruise"
+
+  // Where to post
+  snsAccountId    String
+
+  // Post template with placeholders
+  // {name}, {description}, {discount}, {validUntil} etc.
+  template        String
+  hashtagTemplate String?  // Template for hashtags
+
+  // Auto-posting options
+  postImmediately Boolean  @default(false) // Post immediately or schedule
+  scheduleDelayMinutes Int? // Delay in minutes if not immediate
+
+  isActive        Boolean  @default(true)
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  snsAccount      SnsAccount @relation(fields: [snsAccountId], references: [id], onDelete: Cascade)
+
+  @@index([contentType])
+  @@index([snsAccountId])
+  @@index([isActive])
 }
 
 // Flight Itinerary Model (항공 경로 관리)
@@ -315,4 +378,312 @@ model FlightItinerary {
   @@index([cruiseId])
   @@index([segmentType])
   @@index([departureDate])
+}
+
+// Promotion Code Model (프로모션 코드)
+model PromotionCode {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  type            String   // "percentage" or "fixed"
+  value           Float    // Discount value (percentage or fixed amount)
+  currency        String?  @default("USD") // For fixed discounts
+  description     String?
+
+  // Validity period
+  validFrom       DateTime
+  validUntil      DateTime
+
+  // Usage limits
+  maxUses         Int?     // Maximum number of uses (null = unlimited)
+  currentUses     Int      @default(0)
+  maxUsesPerUser  Int?     @default(1)
+
+  // Restrictions
+  minOrderAmount  Float?   // Minimum order amount required
+  applicableCruises String? // JSON array of cruise IDs (null = all cruises)
+  applicableCategories String? // JSON array of cabin categories
+
+  // Status
+  isActive        Boolean  @default(true)
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([code])
+  @@index([validFrom, validUntil])
+  @@index([isActive])
+}
+
+// Price History Model (가격 변동 이력)
+model PriceHistory {
+  id              String   @id @default(cuid())
+  cruiseId        String
+  cabinCategory   String
+
+  // Price changes
+  oldPrice        Float
+  newPrice        Float
+  currency        String   @default("USD")
+
+  // Change reason
+  changeReason    String   // "inventory", "demand", "promotion", "manual"
+  changeDetails   String?  // JSON details
+
+  // Metadata
+  changedBy       String?  // User ID or "system"
+  changedAt       DateTime @default(now())
+
+  @@index([cruiseId, cabinCategory])
+  @@index([changedAt])
+  @@index([changeReason])
+}
+
+// Pricing Rule Model (가격 책정 규칙)
+model PricingRule {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  ruleType        String   // "inventory", "demand", "seasonal", "manual"
+
+  // Inventory-based rules
+  inventoryThresholdLow    Int?     @default(30)  // % threshold for low inventory
+  inventoryThresholdMedium Int?     @default(50)  // % threshold for medium inventory
+  inventoryThresholdHigh   Int?     @default(70)  // % threshold for high inventory
+
+  priceMultiplierLow       Float?   @default(1.20) // +20% when inventory < 30%
+  priceMultiplierMedium    Float?   @default(1.10) // +10% when inventory < 50%
+  priceMultiplierHigh      Float?   @default(1.05) // +5% when inventory < 70%
+
+  // Demand-based rules
+  demandMultiplierHigh     Float?   @default(1.15) // +15% for high demand
+  demandMultiplierMedium   Float?   @default(1.07) // +7% for medium demand
+  demandMultiplierLow      Float?   @default(1.00) // No change for low demand
+
+  // Group discount rules
+  groupDiscount3to5        Float?   @default(0.05) // 5% for 3-5 cabins
+  groupDiscount6to10       Float?   @default(0.10) // 10% for 6-10 cabins
+  groupDiscount11plus      Float?   @default(0.15) // 15% for 11+ cabins
+
+  // Applicability
+  applicableCruises String? // JSON array of cruise IDs (null = all)
+  applicableCategories String? // JSON array of cabin categories (null = all)
+
+  // Status
+  isActive        Boolean  @default(true)
+  priority        Int      @default(0) // Higher priority rules apply first
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([ruleType])
+  @@index([isActive, priority])
+}
+
+// Group Booking Model (그룹 예약)
+model GroupBooking {
+  id              String   @id @default(cuid())
+  cruiseId        String
+  groupLeaderId   String   // User ID of group leader
+  groupName       String?  // Optional group name
+
+  // Group details
+  numCabins       Int
+  totalPassengers Int
+  discountPercentage Float @default(0) // Group discount (0.05, 0.10, 0.15)
+
+  // Pricing
+  baseTotal       Float
+  discountAmount  Float
+  finalTotal      Float
+  currency        String   @default("USD")
+
+  // Status
+  status          String   @default("pending") // "pending", "confirmed", "partial", "cancelled"
+  paymentStatus   String   @default("pending") // "pending", "partial", "paid", "refunded"
+
+  // Contact info
+  groupLeaderEmail String?
+  groupLeaderPhone String?
+
+  // Metadata
+  notes           String?  // Special requests or notes
+  salesRepId      String?  // For 16+ cabins, assigned sales rep
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  bookings        Booking[]
+
+  @@index([cruiseId])
+  @@index([groupLeaderId])
+  @@index([status])
+}
+
+// Wishlist Model (위시리스트)
+model Wishlist {
+  id              String   @id @default(cuid())
+  userId          String
+  cruiseId        String
+  addedAt         DateTime @default(now())
+  notes           String?
+  priceAlert      Boolean  @default(false) // Enable price drop alerts
+  targetPrice     Float?   // Alert when price drops below this
+
+  @@unique([userId, cruiseId])
+  @@index([userId])
+  @@index([cruiseId])
+}
+
+// Payment Model (결제)
+model Payment {
+  id              String   @id @default(cuid())
+  bookingId       String
+  orderId         String?  @unique
+  paymentKey      String?  // TossPay paymentKey or Stripe paymentIntentId
+  amount          Float
+  currency        String   @default("USD")
+  paymentMethod   String   // "tosspay" or "stripe"
+  status          String   @default("pending") // "pending", "completed", "failed", "refunded"
+
+  // Timestamps
+  createdAt       DateTime @default(now())
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  updatedAt       DateTime @updatedAt
+
+  // Error handling
+  errorMessage    String?
+
+  @@index([bookingId])
+  @@index([orderId])
+  @@index([paymentKey])
+  @@index([status])
+}
+
+// Webhook Log Model (웹훅 로그 및 재시도)
+model WebhookLog {
+  id              String   @id @default(cuid())
+  provider        String   // "stripe" or "tosspay"
+  eventType       String   // Event type (e.g., "payment_intent.succeeded")
+  eventId         String   // External event ID from provider
+  payload         String   // JSON stringified webhook payload
+
+  // Processing
+  status          String   @default("pending") // "pending", "processing", "success", "failed"
+  attemptCount    Int      @default(0)
+  maxAttempts     Int      @default(5)
+  lastAttemptAt   DateTime?
+  lastError       String?
+
+  // Timestamps
+  createdAt       DateTime @default(now())
+  processedAt     DateTime?
+  updatedAt       DateTime @updatedAt
+
+  @@unique([provider, eventId])
+  @@index([status, attemptCount])
+  @@index([provider, eventType])
+  @@index([createdAt])
+}
+
+// Landing Page Image Model (랜딩페이지 이미지 캐러셀)
+model LandingImage {
+  id              String   @id @default(cuid())
+  url             String   // Image URL
+  filename        String   // Original filename
+  alt             String?  // Alt text for accessibility
+  title           String?  // Display title
+  description     String?  // Display description/tagline
+  order           Int      @default(0) // Display order for carousel
+  isActive        Boolean  @default(true) // Active/Inactive toggle
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive, order])
+}
+
+// Cabin Category Model (객실 카테고리)
+model CabinCategory {
+  id              String   @id @default(cuid())
+  code            String   @unique // "inside", "oceanview", "balcony", "suite"
+  name            String   // "내부 객실 (Inside)", "오션뷰 (Oceanview)", etc.
+  nameEn          String?  // English name for i18n
+  description     String?  // Description text
+  features        String?  // JSON array of features ["창문 없음", "트윈 베드", ...]
+  priceMultiplier Float    @default(1.0) // Price multiplier (1.0, 1.3, 1.6, 2.5)
+  imageUrl        String?  // Cabin category image
+  order           Int      @default(0) // Display order
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive, order])
+  @@index([code])
+}
+
+// Cruise Extra/Add-on Model (부가 상품)
+model CruiseExtra {
+  id              String   @id @default(cuid())
+  code            String   @unique // "dining-specialty", "beverage-package", etc.
+  name            String   // "특식 다이닝 패키지"
+  nameEn          String?  // English name
+  description     String?  // Description text
+  price           Float    // Price in USD
+  currency        String   @default("USD")
+  category        String   // "dining", "beverage", "wifi", "shore-excursion", "spa"
+  features        String?  // JSON array of features
+  imageUrl        String?  // Product image
+  maxPerBooking   Int?     // Maximum quantity per booking
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive, category, order])
+  @@index([code])
+}
+
+// Destination Model (크루즈 목적지)
+model Destination {
+  id              String   @id @default(cuid())
+  code            String   @unique // "caribbean", "mediterranean", etc.
+  name            String   // "카리브해"
+  nameEn          String?  // "Caribbean"
+  region          String?  // Broader region classification
+  description     String?  // Destination description
+  imageUrl        String?  // Destination image
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive, order])
+  @@index([code])
+}
+
+// Package Discount Model (패키지 할인)
+model PackageDiscount {
+  id                    String   @id @default(cuid())
+  code                  String   @unique // "cruise-flight-10", "early-bird-15", etc.
+  name                  String   // "크루즈+항공 패키지 할인"
+  nameEn                String?  // "Cruise + Flight Package Discount"
+  description           String?  // Discount description
+  discountType          String   // "percentage" or "fixed"
+  discountValue         Float    // 0.10 for 10%, or fixed amount in USD
+  maxDiscountAmount     Float?   // Maximum discount cap (for percentage type)
+  minOrderAmount        Float?   // Minimum order amount to qualify
+  benefits              String?  // JSON array of benefit descriptions
+  conditions            String?  // JSON array of conditions/requirements
+  applicableTo          String?  // "cruise-flight", "cruise-only", "all"
+  displayText           String?  // "최대 10% 할인" - text shown on UI
+  validFrom             DateTime
+  validUntil            DateTime
+  priority              Int      @default(100)
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([isActive, priority])
+  @@index([code])
+  @@index([validFrom, validUntil])
 }

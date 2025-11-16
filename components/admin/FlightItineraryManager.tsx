@@ -535,7 +535,6 @@ export default function FlightItineraryManager({
                           <option value="">선택</option>
                           <option value="economy">이코노미</option>
                           <option value="business">비즈니스</option>
-                          <option value="first">퍼스트</option>
                         </select>
                       </div>
                       <div>

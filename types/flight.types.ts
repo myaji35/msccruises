@@ -27,7 +27,7 @@ export interface Flight {
   stops: number; // 0 = direct, 1 = 1 stop, etc.
   price: number;
   currency: string;
-  cabin_class: "economy" | "premium_economy" | "business" | "first";
+  cabin_class: "economy" | "business";
   available_seats: number;
 }
 
@@ -37,7 +37,7 @@ export interface FlightSearchParams {
   departure_date: string; // YYYY-MM-DD
   return_date?: string; // YYYY-MM-DD (optional for one-way)
   passengers: number;
-  cabin_class?: "economy" | "premium_economy" | "business" | "first";
+  cabin_class?: "economy" | "business";
   max_stops?: number; // Filter: 0 = direct only, 1 = max 1 stop
 }
 
@@ -77,7 +77,7 @@ export interface PackageSearchParams {
 
   // Flight preferences
   departure_airport: string; // Korean airport (ICN/GMP/PUS)
-  cabin_class?: "economy" | "premium_economy" | "business" | "first";
+  cabin_class?: "economy" | "business";
   max_stops?: number;
 
   // Common

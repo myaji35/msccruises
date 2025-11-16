@@ -1,22 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
-  <!-- MSC Cruises Logo -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <!-- MSC Cruises Logo with Ship Icon -->
   <defs>
     <style>
-      .logo-text { fill: #003366; font-family: Arial, sans-serif; font-weight: bold; }
+      .logo-text { fill: #ffffff; font-family: 'Arial', sans-serif; font-weight: bold; }
       .logo-blue { fill: #003366; }
-      .logo-gold { fill: #FFD700; }
+      .logo-accent { fill: #FFD700; }
+      .ship-icon { fill: #FFD700; stroke: #FFD700; stroke-width: 1.5; }
     </style>
   </defs>
 
-  <!-- Blue Circle Background -->
-  <circle cx="30" cy="30" r="25" class="logo-blue"/>
+  <!-- Background Rectangle -->
+  <rect x="0" y="0" width="240" height="60" class="logo-blue" rx="4"/>
 
-  <!-- White MSC Text in Circle -->
-  <text x="30" y="38" text-anchor="middle" font-size="18" fill="white" font-weight="bold" font-family="Arial">MSC</text>
+  <!-- Ship Icon -->
+  <g class="ship-icon" transform="translate(15, 18)">
+    <!-- Ship hull -->
+    <path d="M2 14 L8 10 L22 10 L28 14 L26 18 L4 18 Z" fill="#FFD700"/>
+    <!-- Ship deck -->
+    <rect x="10" y="6" width="10" height="4" fill="#FFD700"/>
+    <!-- Ship chimney -->
+    <rect x="14" y="2" width="2" height="4" fill="#FFD700"/>
+    <!-- Waves -->
+    <path d="M0 20 Q3 18 6 20 Q9 22 12 20 Q15 18 18 20 Q21 22 24 20 Q27 18 30 20"
+          stroke="#FFD700" fill="none" stroke-width="1.5"/>
+  </g>
 
-  <!-- CRUISES Text -->
-  <text x="65" y="35" font-size="24" class="logo-text" letter-spacing="2">CRUISES</text>
+  <!-- MSC CRUISES Text -->
+  <text x="55" y="25" font-size="20" class="logo-text" letter-spacing="1">MSC</text>
+  <text x="55" y="45" font-size="16" class="logo-text" letter-spacing="3" opacity="0.95">CRUISES</text>
 
-  <!-- Gold Underline -->
-  <rect x="65" y="40" width="130" height="3" class="logo-gold"/>
+  <!-- Decorative accent line -->
+  <line x1="55" y1="30" x2="220" y2="30" stroke="#FFD700" stroke-width="1" opacity="0.3"/>
 </svg>

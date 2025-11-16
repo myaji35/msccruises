@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Ship, Calendar, Users, Star, Plane, User, Settings, DollarSign, ChevronDown, ChevronUp, TrendingUp, TrendingDown, LogOut, BookOpen, Package, Share2 } from "lucide-react";
+import { Ship, Calendar, Users, Star, Plane, User, Settings, DollarSign, ChevronDown, ChevronUp, TrendingUp, TrendingDown, LogOut, BookOpen, Package, Share2, Menu, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import CinematicHero from "@/components/hero/CinematicHero";
+import LandingCarousel from "@/components/hero/LandingCarousel";
+import { PackageSearch } from "@/components/PackageSearch";
+import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 
 interface Cruise {
@@ -43,13 +45,18 @@ interface ExchangeRates {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [featuredCruises, setFeaturedCruises] = useState<Cruise[]>([]);
+  const [scheduledCruises, setScheduledCruises] = useState<Cruise[]>([]);
   const [loadingCruises, setLoadingCruises] = useState(true);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
   const [isRatesExpanded, setIsRatesExpanded] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchFeaturedCruises();
+    fetchScheduledCruises();
     fetchExchangeRate();
   }, []);
 
@@ -62,6 +69,16 @@ export default function Home() {
       console.error("Failed to fetch featured cruises:", error);
     } finally {
       setLoadingCruises(false);
+    }
+  };
+
+  const fetchScheduledCruises = async () => {
+    try {
+      const response = await fetch("/api/cruises/scheduled");
+      const data = await response.json();
+      setScheduledCruises(data.cruises || []);
+    } catch (error) {
+      console.error("Failed to fetch scheduled cruises:", error);
     }
   };
 
@@ -89,23 +106,40 @@ export default function Home() {
     }
   };
 
+  const handlePackageSearch = (params: any) => {
+    setIsSearching(true);
+    // 검색 매개변수를 sessionStorage에 저장
+    sessionStorage.setItem('packageSearchParams', JSON.stringify(params));
+    // /packages 페이지로 이동
+    router.push('/packages');
+  };
+
   return (
     <main className="min-h-screen">
       {/* Header */}
       <header className="bg-[#003366] text-white sticky top-0 z-50 shadow-lg">
         <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/">
+          <Link href="/" style={{ textDecoration: 'none' }}>
             <div className="cursor-pointer hover:opacity-80 transition">
               <Image
                 src="/msc-logo.svg"
                 alt="MSC Cruises"
-                width={180}
-                height={54}
+                width={200}
+                height={50}
                 priority
               />
             </div>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            {/* 모바일 메뉴 버튼 */}
+            <button
+              className="md:hidden text-white hover:text-[#FFD700] transition"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+
+            {/* 데스크톱 메뉴 */}
             <ul className="hidden md:flex gap-6">
               <li><a href="#cruises" className="hover:text-[#FFD700] transition">크루즈</a></li>
               <li><Link href="/packages" className="hover:text-[#FFD700] transition flex items-center gap-1">
@@ -300,8 +334,67 @@ export default function Home() {
         </nav>
       </header>
 
-      {/* Cinematic Hero Section with Video Parallax */}
-      <CinematicHero />
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#004080] text-white shadow-lg">
+          <nav className="container mx-auto px-4 py-4 space-y-3">
+            <a
+              href="#cruises"
+              className="block py-2 px-3 hover:bg-[#003366] rounded-lg transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              크루즈
+            </a>
+            <Link
+              href="/packages"
+              className="block py-2 px-3 hover:bg-[#003366] rounded-lg transition flex items-center gap-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Plane className="w-4 h-4" />
+              패키지 검색
+            </Link>
+            <a
+              href="#schedule"
+              className="block py-2 px-3 hover:bg-[#003366] rounded-lg transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              출발일정
+            </a>
+            <a
+              href="#destinations"
+              className="block py-2 px-3 hover:bg-[#003366] rounded-lg transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              목적지
+            </a>
+            <Link
+              href="/about"
+              className="block py-2 px-3 hover:bg-[#003366] rounded-lg transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              회사소개
+            </Link>
+            <Link
+              href="/admin/cruises"
+              className="block py-2 px-3 hover:bg-[#003366] rounded-lg transition flex items-center gap-2 border-t border-[#004080] pt-3 mt-3"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Settings className="w-4 h-4" />
+              관리자
+            </Link>
+          </nav>
+        </div>
+      )}
+
+      {/* Landing Page Carousel */}
+      <LandingCarousel />
+
+      {/* Package Search Section */}
+      <section className="py-12 bg-gradient-to-b from-gray-100 to-white">
+        <div className="container mx-auto px-4">
+          <PackageSearch onSearch={handlePackageSearch} isLoading={isSearching} />
+        </div>
+      </section>
 
       {/* Departure Schedule Section (작은별여행사 스타일) */}
       <section id="schedule" className="py-16 bg-gray-50">
@@ -324,103 +417,98 @@ export default function Home() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-semibold text-[#003366]">2025년 12월 15일(월)</td>
-                    <td className="px-6 py-4">2025년 12월 22일(월)</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Ship className="w-5 h-5 text-[#003366]" />
-                        <span className="font-semibold">MSC Seaside</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-2xl font-bold text-[#FFD700]">$1,299</span>
-                      <span className="text-sm text-gray-500 block">1인 기준</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        출확(現26명)
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <Button className="bg-[#003366] hover:bg-[#004080]">선택</Button>
-                    </td>
-                  </tr>
+                  {scheduledCruises.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                        등록된 출발 일정이 없습니다. 관리자 페이지에서 출발일을 등록해주세요.
+                      </td>
+                    </tr>
+                  ) : (
+                    scheduledCruises.map((cruise) => {
+                      const hasPromotion = !!cruise.promotionTag;
+                      const isSpecialStatus = cruise.bookingStatus === "집중모객" || hasPromotion;
+                      const isClosed = cruise.bookingStatus === "마감";
 
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-semibold text-[#003366]">2026년 01월 10일(토)</td>
-                    <td className="px-6 py-4">2026년 01월 17일(토)</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Ship className="w-5 h-5 text-[#003366]" />
-                        <span className="font-semibold">MSC Seaside</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-2xl font-bold text-[#FFD700]">$1,399</span>
-                      <span className="text-sm text-gray-500 block">1인 기준</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        現12명
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <Button className="bg-[#003366] hover:bg-[#004080]">선택</Button>
-                    </td>
-                  </tr>
+                      // 모객현황 스타일 매핑
+                      const statusStyle = {
+                        "출확": "bg-green-100 text-green-800",
+                        "집중모객": "bg-orange-100 text-orange-800",
+                        "마감": "bg-red-100 text-red-800",
+                        "일반": "bg-blue-100 text-blue-800"
+                      }[cruise.bookingStatus || "일반"] || "bg-blue-100 text-blue-800";
 
-                  <tr className="hover:bg-gray-50 bg-yellow-50">
-                    <td className="px-6 py-4 font-semibold text-[#003366]">
-                      2026년 02월 14일(토)
-                      <span className="ml-2 inline-block bg-red-500 text-white px-2 py-1 text-xs rounded">발렌타인 특가</span>
-                    </td>
-                    <td className="px-6 py-4">2026년 02월 21일(토)</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Ship className="w-5 h-5 text-[#003366]" />
-                        <span className="font-semibold">MSC Meraviglia</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <span className="text-sm text-gray-400 line-through block">$1,899</span>
-                        <span className="text-2xl font-bold text-red-600">$1,699</span>
-                        <span className="text-sm text-gray-500 block">1인 기준</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        집중모객
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <Button className="bg-[#FFD700] text-[#003366] hover:bg-[#FFC700]">선택</Button>
-                    </td>
-                  </tr>
-
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-semibold text-[#003366]">2026년 03월 20일(금)</td>
-                    <td className="px-6 py-4">2026년 03월 27일(금)</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Ship className="w-5 h-5 text-[#003366]" />
-                        <span className="font-semibold">MSC Divina</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-2xl font-bold text-[#FFD700]">$2,499</span>
-                      <span className="text-sm text-gray-500 block">1인 기준</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        마감(現30명)
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <Button disabled className="bg-gray-300 cursor-not-allowed">마감</Button>
-                    </td>
-                  </tr>
+                      return (
+                        <tr
+                          key={cruise.id}
+                          className={`hover:bg-gray-50 ${isSpecialStatus ? 'bg-yellow-50' : ''}`}
+                        >
+                          <td className="px-6 py-4 font-semibold text-[#003366]">
+                            {cruise.departureDate
+                              ? new Date(cruise.departureDate).toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  weekday: 'short'
+                                })
+                              : "미정"}
+                            {cruise.promotionTag && (
+                              <span className="ml-2 inline-block bg-red-500 text-white px-2 py-1 text-xs rounded">
+                                {cruise.promotionTag}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            {cruise.returnDate
+                              ? new Date(cruise.returnDate).toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  weekday: 'short'
+                                })
+                              : "미정"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <Ship className="w-5 h-5 text-[#003366]" />
+                              <span className="font-semibold">{cruise.shipName}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div>
+                              {cruise.originalPrice && cruise.originalPrice > cruise.startingPrice && (
+                                <span className="text-sm text-gray-400 line-through block">
+                                  {cruise.currency === "USD" ? "$" : cruise.currency === "KRW" ? "₩" : "€"}
+                                  {cruise.originalPrice.toLocaleString()}
+                                </span>
+                              )}
+                              <span className={`text-2xl font-bold ${hasPromotion ? 'text-red-600' : 'text-[#FFD700]'}`}>
+                                {cruise.currency === "USD" ? "$" : cruise.currency === "KRW" ? "₩" : "€"}
+                                {cruise.startingPrice.toLocaleString()}
+                              </span>
+                              <span className="text-sm text-gray-500 block">1인 기준</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusStyle}`}>
+                              {cruise.bookingStatus}
+                              {cruise.currentParticipants > 0 && ` (現${cruise.currentParticipants}명)`}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            {isClosed ? (
+                              <Button disabled className="bg-gray-300 cursor-not-allowed">마감</Button>
+                            ) : (
+                              <Link href={`/booking/${cruise.id}`}>
+                                <Button className={hasPromotion ? "bg-[#FFD700] text-[#003366] hover:bg-[#FFC700]" : "bg-[#003366] hover:bg-[#004080]"}>
+                                  선택
+                                </Button>
+                              </Link>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

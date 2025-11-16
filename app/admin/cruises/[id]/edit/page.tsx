@@ -39,9 +39,16 @@ export default function EditCruisePage({ params }: { params: Promise<{ id: strin
     destinations: "",
     durationDays: "",
     startingPrice: "",
+    originalPrice: "",
     currency: "USD",
     status: "draft",
     featured: false,
+    departureDate: "",
+    returnDate: "",
+    promotionTag: "",
+    bookingStatus: "일반",
+    currentParticipants: "",
+    maxParticipants: "",
   });
 
   useEffect(() => {
@@ -72,9 +79,16 @@ export default function EditCruisePage({ params }: { params: Promise<{ id: strin
         destinations: destinations,
         durationDays: cruise.durationDays?.toString() || "",
         startingPrice: cruise.startingPrice?.toString() || "",
+        originalPrice: cruise.originalPrice?.toString() || "",
         currency: cruise.currency || "USD",
         status: cruise.status || "draft",
         featured: cruise.featured || false,
+        departureDate: cruise.departureDate ? new Date(cruise.departureDate).toISOString().split('T')[0] : "",
+        returnDate: cruise.returnDate ? new Date(cruise.returnDate).toISOString().split('T')[0] : "",
+        promotionTag: cruise.promotionTag || "",
+        bookingStatus: cruise.bookingStatus || "일반",
+        currentParticipants: cruise.currentParticipants?.toString() || "",
+        maxParticipants: cruise.maxParticipants?.toString() || "",
       });
 
       // Set media
@@ -129,6 +143,11 @@ export default function EditCruisePage({ params }: { params: Promise<{ id: strin
           destinations: formData.destinations.split(",").map((d) => d.trim()),
           durationDays: parseInt(formData.durationDays),
           startingPrice: parseFloat(formData.startingPrice),
+          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+          departureDate: formData.departureDate ? new Date(formData.departureDate).toISOString() : null,
+          returnDate: formData.returnDate ? new Date(formData.returnDate).toISOString() : null,
+          currentParticipants: formData.currentParticipants ? parseInt(formData.currentParticipants) : 0,
+          maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : null,
           media: media,
         }),
       });
@@ -324,6 +343,22 @@ export default function EditCruisePage({ params }: { params: Promise<{ id: strin
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  원래 가격 (할인 표시용)
+                </label>
+                <input
+                  type="number"
+                  name="originalPrice"
+                  min="0"
+                  step="0.01"
+                  value={formData.originalPrice}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="1899.00 (선택사항)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   통화
                 </label>
                 <select
@@ -336,6 +371,93 @@ export default function EditCruisePage({ params }: { params: Promise<{ id: strin
                   <option value="KRW">KRW (₩)</option>
                   <option value="EUR">EUR (€)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  출발일
+                </label>
+                <input
+                  type="date"
+                  name="departureDate"
+                  value={formData.departureDate}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  귀국일
+                </label>
+                <input
+                  type="date"
+                  name="returnDate"
+                  value={formData.returnDate}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  프로모션 태그
+                </label>
+                <input
+                  type="text"
+                  name="promotionTag"
+                  value={formData.promotionTag}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="발렌타인 특가, 얼리버드 등"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  모객 현황
+                </label>
+                <select
+                  name="bookingStatus"
+                  value={formData.bookingStatus}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="일반">일반</option>
+                  <option value="출확">출확</option>
+                  <option value="집중모객">집중모객</option>
+                  <option value="마감">마감</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  현재 참가자 수
+                </label>
+                <input
+                  type="number"
+                  name="currentParticipants"
+                  min="0"
+                  value={formData.currentParticipants}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="26"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  최대 참가자 수
+                </label>
+                <input
+                  type="number"
+                  name="maxParticipants"
+                  min="0"
+                  value={formData.maxParticipants}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="40"
+                />
               </div>
 
               <div>

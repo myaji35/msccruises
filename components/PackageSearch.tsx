@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Plane, Ship, MapPin, Calendar, Users } from "lucide-react";
 import { KOREAN_AIRPORTS } from "@/types/flight.types";
@@ -10,9 +10,11 @@ interface PackageSearchProps {
   isLoading?: boolean;
 }
 
-type CabinClass = "economy" | "premium_economy" | "business" | "first";
+type CabinClass = "economy" | "business";
 
 export function PackageSearch({ onSearch, isLoading = false }: PackageSearchProps) {
+  const [destinations, setDestinations] = useState<any[]>([]);
+  const [packageDiscount, setPackageDiscount] = useState<any>(null);
   const [searchParams, setSearchParams] = useState<{
     departure_airport: string;
     cruise_destination: string;
@@ -31,6 +33,33 @@ export function PackageSearch({ onSearch, isLoading = false }: PackageSearchProp
     max_stops: undefined,
   });
 
+  // Fetch destinations and package discount from DB
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [destResponse, discountResponse] = await Promise.all([
+          fetch('/api/destinations'),
+          fetch('/api/package-discounts'),
+        ]);
+
+        const destData = await destResponse.json();
+        const discountData = await discountResponse.json();
+
+        setDestinations(destData.destinations || []);
+
+        // Get the first cruise-flight discount
+        const cruiseFlightDiscount = discountData.discounts?.find(
+          (d: any) => d.applicableTo === 'cruise-flight' || d.applicableTo === 'all'
+        );
+        setPackageDiscount(cruiseFlightDiscount || null);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchParams);
@@ -48,9 +77,11 @@ export function PackageSearch({ onSearch, isLoading = false }: PackageSearchProp
           <Plane className="w-6 h-6" />
           <span className="text-xl font-bold">항공권</span>
         </div>
-        <span className="ml-2 text-sm bg-[#FFD700] text-[#003366] px-3 py-1 rounded-full font-semibold">
-          패키지 할인 최대 10%
-        </span>
+        {packageDiscount && (
+          <span className="ml-2 text-sm bg-[#FFD700] text-[#003366] px-3 py-1 rounded-full font-semibold">
+            {packageDiscount.displayText || `패키지 할인 최대 ${(packageDiscount.discountValue * 100).toFixed(0)}%`}
+          </span>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -94,9 +125,7 @@ export function PackageSearch({ onSearch, isLoading = false }: PackageSearchProp
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
             >
               <option value="economy">이코노미</option>
-              <option value="premium_economy">프리미엄 이코노미</option>
               <option value="business">비즈니스</option>
-              <option value="first">일등석</option>
             </select>
           </div>
 
@@ -140,11 +169,11 @@ export function PackageSearch({ onSearch, isLoading = false }: PackageSearchProp
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
             >
               <option value="">전체</option>
-              <option value="Caribbean">카리브해</option>
-              <option value="Mediterranean">지중해</option>
-              <option value="Northern Europe">북유럽</option>
-              <option value="Alaska">알래스카</option>
-              <option value="Asia">아시아</option>
+              {destinations.map((dest) => (
+                <option key={dest.code} value={dest.code}>
+                  {dest.name}
+                </option>
+              ))}
             </select>
           </div>
 

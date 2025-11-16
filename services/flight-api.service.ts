@@ -60,9 +60,7 @@ class FlightApiService {
     // Cabin class multipliers
     const cabinMultipliers = {
       economy: 1,
-      premium_economy: 1.5,
       business: 3,
-      first: 5,
     };
 
     // Generate flights for each airline
@@ -110,7 +108,7 @@ class FlightApiService {
     airline: { code: string; name: string };
     stops: number;
     basePrice: number;
-    cabin_class: "economy" | "premium_economy" | "business" | "first";
+    cabin_class: "economy" | "business";
   }): Flight {
     const { id, origin, destination, departure_date, airline, stops, basePrice, cabin_class } = config;
 
