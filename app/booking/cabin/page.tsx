@@ -6,9 +6,10 @@ import { useBookingStore } from '@/store/booking-store';
 import ProgressIndicator from '@/components/booking/ProgressIndicator';
 import PriceSummary from '@/components/booking/PriceSummary';
 import DeckPlan from '@/components/booking/DeckPlan';
-import { Bed, Users, Eye, Waves, Crown, Check, ChevronRight, Map, X } from 'lucide-react';
+import { Bed, Users, Eye, Waves, Crown, Check, ChevronRight, Map, X, Sparkles } from 'lucide-react';
 import type { CabinOption } from '@/types/booking.types';
 import toast from 'react-hot-toast';
+import { sortCabinsByRecommendation, BADGE_STYLES, type UserProfile } from '@/lib/cabin-recommendation';
 
 // Icon mapping for categories
 const ICON_MAP: Record<string, any> = {
@@ -43,6 +44,7 @@ export default function CabinSelectionPage() {
   const [loading, setLoading] = useState(false);
   const [cabinCategories, setCabinCategories] = useState<any[]>([]);
   const [fetchingCategories, setFetchingCategories] = useState(true);
+  const [showRecommendations, setShowRecommendations] = useState(true);
 
   // Fetch cabin categories from DB
   useEffect(() => {
@@ -257,14 +259,55 @@ export default function CabinSelectionPage() {
               )}
             </div>
 
+            {/* AI 추천 토글 */}
+            <div className="mb-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">AI 객실 추천</h3>
+                  <p className="text-xs text-gray-600">예약 정보를 기반으로 최적의 객실을 추천합니다</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRecommendations(!showRecommendations)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  showRecommendations
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                {showRecommendations ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
             {/* Cabin Categories */}
             <div className="space-y-4">
-              {cabinCategories.map((cabin, index) => {
-                const price = selectedCruise.startingPrice * cabin.priceMultiplier;
-                const totalPrice = price * numCabins;
-                const isSelected = selectedCategory === cabin.id;
-                const Icon = ICON_MAP[cabin.code] || Bed;
-                const color = COLOR_MAP[cabin.code] || 'blue';
+              {(() => {
+                // 사용자 프로필 생성
+                const userProfile: UserProfile = {
+                  numCabins,
+                  adults: 2, // 기본값, 실제로는 사용자 입력에서 가져와야 함
+                  budget: selectedCruise.startingPrice * 2.5, // 평균 예산 추정
+                  preferences: {
+                    needsView: true,
+                    needsBalcony: numCabins <= 2,
+                    isLuxury: numCabins <= 2,
+                    familyFriendly: numCabins >= 3,
+                  },
+                };
+
+                // 추천 점수로 정렬
+                const sortedCabins = showRecommendations
+                  ? sortCabinsByRecommendation(cabinCategories, userProfile, selectedCruise.startingPrice)
+                  : cabinCategories.map((cabin) => ({ cabin, recommendation: null }));
+
+                return sortedCabins.map(({ cabin, recommendation }, index) => {
+                  const price = selectedCruise.startingPrice * cabin.priceMultiplier;
+                  const totalPrice = price * numCabins;
+                  const isSelected = selectedCategory === cabin.id;
+                  const Icon = ICON_MAP[cabin.code] || Bed;
+                  const color = COLOR_MAP[cabin.code] || 'blue';
+                  const isTopRecommendation = showRecommendations && index === 0;
 
                 return (
                   <div
@@ -273,11 +316,26 @@ export default function CabinSelectionPage() {
                     className={`
                       bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer
                       transform hover:scale-[1.02] active:scale-[0.98]
-                      border-2 ${isSelected ? 'border-blue-600 ring-2 ring-blue-200 scale-[1.01]' : 'border-transparent'}
+                      border-2 ${
+                        isTopRecommendation
+                          ? 'border-purple-500 ring-2 ring-purple-200'
+                          : isSelected
+                          ? 'border-blue-600 ring-2 ring-blue-200 scale-[1.01]'
+                          : 'border-transparent'
+                      }
                       animate-fade-in
+                      ${isTopRecommendation ? 'relative' : ''}
                     `}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
+                    {/* Top Recommendation Badge */}
+                    {isTopRecommendation && (
+                      <div className="absolute -top-3 left-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold shadow-lg flex items-center gap-1 z-10">
+                        <Sparkles className="w-4 h-4" />
+                        AI 최고 추천
+                      </div>
+                    )}
+
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start gap-4">
@@ -285,15 +343,54 @@ export default function CabinSelectionPage() {
                             <Icon className={`w-6 h-6 text-${color}-600`} />
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-1">
-                              {cabin.name}
-                            </h3>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-xl font-bold text-gray-900">
+                                {cabin.name}
+                              </h3>
+                              {showRecommendations && recommendation && recommendation.score >= 70 && (
+                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                                  {recommendation.score}점
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Recommendation Badges */}
+                            {showRecommendations && recommendation && recommendation.badges.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {recommendation.badges.map((badge) => {
+                                  const badgeInfo = BADGE_STYLES[badge];
+                                  return (
+                                    <span
+                                      key={badge}
+                                      className={`text-xs px-2 py-0.5 rounded-full font-medium bg-${badgeInfo.color}-100 text-${badgeInfo.color}-700`}
+                                    >
+                                      {badgeInfo.icon} {badgeInfo.label}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
                             <p className="text-gray-600 text-sm mb-3">
                               {cabin.description}
                             </p>
 
+                            {/* Recommendation Reasons */}
+                            {showRecommendations && recommendation && recommendation.reasons.length > 0 && (
+                              <div className="mb-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                                <p className="text-xs font-semibold text-purple-900 mb-1">추천 이유:</p>
+                                <ul className="space-y-1">
+                                  {recommendation.reasons.map((reason, idx) => (
+                                    <li key={idx} className="flex items-start gap-2 text-xs text-purple-800">
+                                      <Check className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                                      <span>{reason}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
                             <ul className="space-y-1">
-                              {cabin.features.map((feature, idx) => (
+                              {cabin.features.map((feature: string, idx: number) => (
                                 <li
                                   key={idx}
                                   className="flex items-center gap-2 text-sm text-gray-700"
@@ -362,7 +459,7 @@ export default function CabinSelectionPage() {
                     </div>
                   </div>
                 );
-              })}
+              })})()}
             </div>
 
             {/* Back Button */}
