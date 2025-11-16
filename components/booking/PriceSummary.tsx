@@ -41,20 +41,20 @@ export default function PriceSummary() {
           code: promoInput.toUpperCase(),
           cruiseId: selectedCruise?.id,
           cabinCategory: selectedCabin?.category,
-          currentPrice: subtotal,
+          totalAmount: subtotal,
         }),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (data.valid) {
+      if (result.success && result.data.isValid) {
         setPromoStatus('valid');
         setPromoCode(promoInput.toUpperCase());
-        setPromoDiscount(data.discountAmount);
-        setPromoMessage(`${data.discountAmount.toLocaleString()}원 할인 적용됨`);
+        setPromoDiscount(result.data.discountAmount);
+        setPromoMessage(`$${result.data.discountAmount.toLocaleString()} 할인 적용됨`);
       } else {
         setPromoStatus('invalid');
-        setPromoMessage(data.error || '유효하지 않은 프로모션 코드입니다');
+        setPromoMessage(result.data?.message || result.error || '유효하지 않은 프로모션 코드입니다');
       }
     } catch (error) {
       setPromoStatus('invalid');

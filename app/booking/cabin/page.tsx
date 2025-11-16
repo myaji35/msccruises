@@ -66,29 +66,72 @@ export default function CabinSelectionPage() {
     }
   }, [selectedCruise]);
 
-  const handleSelectCabin = (category: any) => {
+  const handleSelectCabin = async (category: any) => {
     if (!selectedCruise) return;
 
     setLoading(true);
 
-    const cabinOption: CabinOption = {
-      id: category.id,
-      name: category.name,
-      category: category.code,
-      description: category.description || '',
-      price: selectedCruise.startingPrice * category.priceMultiplier,
-      features: category.features || [],
-      available: true, // Mock availability
-      deckNumber: undefined,
-    };
+    try {
+      // Story 002 동적 가격 계산 API 호출
+      const pricingResponse = await fetch('/api/v1/pricing/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cruiseId: selectedCruise.id,
+          cabinCategory: category.code,
+          numCabins: numCabins,
+          departureDate: selectedCruise.departureDate,
+        }),
+      });
 
-    selectCabin(cabinOption);
+      const pricingData = await pricingResponse.json();
 
-    setTimeout(() => {
-      setLoading(false);
-      goToNextStep();
-      router.push('/booking/extras');
-    }, 500);
+      // 동적 가격이 있으면 사용, 없으면 기본 가격 사용
+      const finalPrice = pricingData.success && pricingData.data?.finalPrice
+        ? pricingData.data.finalPrice
+        : selectedCruise.startingPrice * category.priceMultiplier;
+
+      const cabinOption: CabinOption = {
+        id: category.id,
+        name: category.name,
+        category: category.code,
+        description: category.description || '',
+        price: finalPrice,
+        features: category.features || [],
+        available: true, // Mock availability
+        deckNumber: undefined,
+      };
+
+      selectCabin(cabinOption);
+
+      setTimeout(() => {
+        setLoading(false);
+        goToNextStep();
+        router.push('/booking/extras');
+      }, 500);
+    } catch (error) {
+      console.error('객실 선택 오류:', error);
+
+      // 오류 발생 시 기본 가격으로 fallback
+      const cabinOption: CabinOption = {
+        id: category.id,
+        name: category.name,
+        category: category.code,
+        description: category.description || '',
+        price: selectedCruise.startingPrice * category.priceMultiplier,
+        features: category.features || [],
+        available: true,
+        deckNumber: undefined,
+      };
+
+      selectCabin(cabinOption);
+
+      setTimeout(() => {
+        setLoading(false);
+        goToNextStep();
+        router.push('/booking/extras');
+      }, 500);
+    }
   };
 
   const handleStepClick = (step: number) => {
