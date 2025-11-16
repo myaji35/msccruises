@@ -8,6 +8,7 @@ import PriceSummary from '@/components/booking/PriceSummary';
 import DeckPlan from '@/components/booking/DeckPlan';
 import { Bed, Users, Eye, Waves, Crown, Check, ChevronRight, Map, X } from 'lucide-react';
 import type { CabinOption } from '@/types/booking.types';
+import toast from 'react-hot-toast';
 
 // Icon mapping for categories
 const ICON_MAP: Record<string, any> = {
@@ -108,6 +109,16 @@ export default function CabinSelectionPage() {
 
       selectCabin(cabinOption);
 
+      // 성공 토스트
+      toast.success(
+        cabinNumber
+          ? `객실 ${cabinNumber} 선택 완료!`
+          : `${category.name} 선택 완료!`,
+        {
+          icon: '🛳️',
+        }
+      );
+
       setTimeout(() => {
         setLoading(false);
         goToNextStep();
@@ -115,6 +126,9 @@ export default function CabinSelectionPage() {
       }, 500);
     } catch (error) {
       console.error('객실 선택 오류:', error);
+
+      // 에러 토스트
+      toast.error('가격 정보를 불러오는 중 오류가 발생했습니다. 기본 가격으로 진행합니다.');
 
       // 오류 발생 시 기본 가격으로 fallback
       const cabinOption: CabinOption = {
@@ -245,7 +259,7 @@ export default function CabinSelectionPage() {
 
             {/* Cabin Categories */}
             <div className="space-y-4">
-              {cabinCategories.map((cabin) => {
+              {cabinCategories.map((cabin, index) => {
                 const price = selectedCruise.startingPrice * cabin.priceMultiplier;
                 const totalPrice = price * numCabins;
                 const isSelected = selectedCategory === cabin.id;
@@ -257,9 +271,12 @@ export default function CabinSelectionPage() {
                     key={cabin.id}
                     onClick={() => setSelectedCategory(cabin.id)}
                     className={`
-                      bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer
-                      border-2 ${isSelected ? 'border-blue-600 ring-2 ring-blue-200' : 'border-transparent'}
+                      bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer
+                      transform hover:scale-[1.02] active:scale-[0.98]
+                      border-2 ${isSelected ? 'border-blue-600 ring-2 ring-blue-200 scale-[1.01]' : 'border-transparent'}
+                      animate-fade-in
                     `}
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-4">
@@ -368,8 +385,8 @@ export default function CabinSelectionPage() {
 
       {/* Deck Plan Modal */}
       {showDeckPlan && selectedCategory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4">
-          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4 animate-fade-in">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto animate-scale-up">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-3 md:p-4 flex items-center justify-between z-10">
               <h2 className="text-lg md:text-2xl font-bold text-gray-900">
                 {cabinCategories.find((c) => c.id === selectedCategory)?.name} - 덱 플랜
