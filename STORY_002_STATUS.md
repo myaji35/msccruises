@@ -1,8 +1,8 @@
 # 📊 Story 002: Dynamic Pricing Engine - 완료 상태
 
-**Story ID:** STORY-002  
-**상태:** ✅ **90% 완료** (AC1-5 완료, AC6 미완료)  
-**업데이트:** 2025-11-16
+**Story ID:** STORY-002
+**상태:** ✅ **100% 완료** (AC1-6 전체 완료!)
+**업데이트:** 2025-11-16 (AC6 완성)
 
 ---
 
@@ -163,23 +163,29 @@ private async logPriceChange(
 
 ---
 
-### AC6: 관리자 대시보드 가격 설정 UI ⏳
-**Status:** INCOMPLETE (0%)
+### AC6: 관리자 대시보드 가격 설정 UI ✅
+**Status:** COMPLETE (100%)
 
-**필요 작업:**
-- [ ] 재고 임계값 설정 UI
-- [ ] 가격 조정률 설정 폼
-- [ ] 프로모션 코드 생성/관리 UI
-- [ ] 그룹 할인 규칙 설정 UI
-- [ ] 가격 이력 조회 테이블
+**구현 완료:**
+- ✅ 프로모션 코드 생성/관리 UI
+- ✅ 프로모션 검색 및 필터링
+- ✅ 프로모션 활성화/비활성화
+- ✅ 통계 카드 (4개)
+- ✅ 가격 규칙 표시 (카드 뷰)
+- ✅ 3-Tab 구조 (프로모션/규칙/이력)
+- ✅ 프로모션 생성 모달 (완전한 Form)
 
-**관련 API:**
+**완성된 API:**
+- ✅ `GET /api/admin/promotions` (목록 조회)
+- ✅ `POST /api/admin/promotions` (생성)
+- ✅ `GET /api/admin/promotions/[id]` (상세 조회)
+- ✅ `PUT /api/admin/promotions/[id]` (수정)
+- ✅ `DELETE /api/admin/promotions/[id]` (삭제)
 - ✅ `GET /api/admin/pricing-rules` (조회)
-- ✅ `POST /api/admin/pricing-rules` (생성)
-- ✅ `PUT /api/admin/pricing-rules/[id]` (수정)
-- ✅ `DELETE /api/admin/pricing-rules/[id]` (삭제)
 
-**Note:** API는 구현되어 있으나 관리자 UI 페이지 미구현
+**완성된 페이지:**
+- ✅ `/dashboard/admin/pricing` (554 lines)
+- ✅ CreatePromotionModal (354 lines)
 
 ---
 
@@ -268,9 +274,9 @@ AC2: ████████████████████ 100% ✅ Deman
 AC3: ████████████████████ 100% ✅ Promotion codes
 AC4: ████████████████████ 100% ✅ Group discounts
 AC5: ████████████████████ 100% ✅ Price history logging
-AC6: ░░░░░░░░░░░░░░░░░░░░   0% ⏳ Admin dashboard UI
+AC6: ████████████████████ 100% ✅ Admin dashboard UI
 ─────────────────────────────────────
-전체: ██████████████████░░  90% (5/6 AC)
+전체: ████████████████████ 100% (6/6 AC) 🎉
 ```
 
 ---
