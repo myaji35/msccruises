@@ -13,7 +13,10 @@ import {
   Calendar,
   DollarSign,
   Trello,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Tag,
+  History,
+  BarChart3
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -252,6 +255,48 @@ export default function AdminPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">랜딩 이미지</h3>
                   <p className="text-sm text-gray-600">메인 페이지 캐러셀 이미지</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/pricing-rules">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="bg-indigo-100 p-4 rounded-lg">
+                  <BarChart3 className="w-8 h-8 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">가격 규칙</h3>
+                  <p className="text-sm text-gray-600">동적 가격 책정 규칙 관리</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/promotions">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="bg-yellow-100 p-4 rounded-lg">
+                  <Tag className="w-8 h-8 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">프로모션 코드</h3>
+                  <p className="text-sm text-gray-600">할인 코드 생성 및 관리</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/price-history">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="bg-teal-100 p-4 rounded-lg">
+                  <History className="w-8 h-8 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">가격 변동 이력</h3>
+                  <p className="text-sm text-gray-600">가격 변경 추적 및 분석</p>
                 </div>
               </div>
             </div>

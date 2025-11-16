@@ -231,6 +231,14 @@
       "namedRegex": "^/api/v1/payments/(?<nxtPid>[^/]+?)/refund(?:/)?$"
     },
     {
+      "page": "/api/v1/promotions/[id]",
+      "regex": "^/api/v1/promotions/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v1/promotions/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/booking/[id]",
       "regex": "^/booking/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -353,10 +361,22 @@
       "namedRegex": "^/admin/landing\\-images(?:/)?$"
     },
     {
+      "page": "/admin/price-history",
+      "regex": "^/admin/price\\-history(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/price\\-history(?:/)?$"
+    },
+    {
       "page": "/admin/pricing-rules",
       "regex": "^/admin/pricing\\-rules(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/admin/pricing\\-rules(?:/)?$"
+    },
+    {
+      "page": "/admin/promotions",
+      "regex": "^/admin/promotions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/promotions(?:/)?$"
     },
     {
       "page": "/admin/settings",
@@ -435,6 +455,12 @@
       "regex": "^/api/admin/package\\-discounts(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/admin/package\\-discounts(?:/)?$"
+    },
+    {
+      "page": "/api/admin/price-history",
+      "regex": "^/api/admin/price\\-history(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/price\\-history(?:/)?$"
     },
     {
       "page": "/api/admin/pricing-rules",

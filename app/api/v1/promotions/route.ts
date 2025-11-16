@@ -22,13 +22,29 @@ export async function GET(req: NextRequest) {
     }
 
     const promos = await prisma.promotionCode.findMany({
-      where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
 
+    // Transform data to match frontend interface
+    const transformedPromos = promos.map((promo) => ({
+      id: promo.id,
+      code: promo.code,
+      discountType: promo.type,
+      discountValue: promo.value,
+      minOrderAmount: promo.minOrderAmount,
+      maxUses: promo.maxUses,
+      currentUses: promo.currentUses || 0,
+      validFrom: promo.validFrom.toISOString(),
+      validUntil: promo.validUntil.toISOString(),
+      applicableCruises: promo.applicableCruises ? JSON.parse(promo.applicableCruises) : [],
+      applicableCategories: promo.applicableCategories ? JSON.parse(promo.applicableCategories) : [],
+      isActive: promo.isActive,
+      createdAt: promo.createdAt.toISOString(),
+    }));
+
     return NextResponse.json({
       success: true,
-      data: promos,
+      promotions: transformedPromos,
     });
   } catch (error: any) {
     console.error('Get promotions error:', error);
