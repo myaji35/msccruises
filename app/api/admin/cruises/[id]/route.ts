@@ -76,38 +76,79 @@ export async function PUT(
       );
     }
 
-    // Update cruise
-    const updatedCruise = await prisma.cruise.update({
-      where: { id },
-      data: {
-        name: data.name,
-        shipName: data.shipName,
-        description: data.description || null,
-        departurePort: data.departurePort,
-        destinations: JSON.stringify(data.destinations || []),
-        durationDays: parseInt(data.durationDays) || existingCruise.durationDays,
-        startingPrice: parseFloat(data.startingPrice) || existingCruise.startingPrice,
-        currency: data.currency || "USD",
-        status: data.status || "draft",
-        featured: data.featured || false,
-      },
-      include: {
-        media: {
-          orderBy: {
-            order: "asc",
+    // Update cruise using transaction
+    const updatedCruise = await prisma.$transaction(async (tx) => {
+      // 1. Update basic cruise info
+      const cruise = await tx.cruise.update({
+        where: { id },
+        data: {
+          name: data.name,
+          shipName: data.shipName,
+          description: data.description || null,
+          departurePort: data.departurePort,
+          destinations: JSON.stringify(data.destinations || []),
+          durationDays: parseInt(data.durationDays) || existingCruise.durationDays,
+          startingPrice: parseFloat(data.startingPrice) || existingCruise.startingPrice,
+          originalPrice: data.originalPrice ? parseFloat(data.originalPrice) : null,
+          currency: data.currency || "USD",
+          status: data.status || "draft",
+          featured: data.featured || false,
+          departureDate: data.departureDate || null,
+          returnDate: data.returnDate || null,
+          promotionTag: data.promotionTag || null,
+          bookingStatus: data.bookingStatus || "일반",
+          currentParticipants: data.currentParticipants || 0,
+          maxParticipants: data.maxParticipants || null,
+        },
+      });
+
+      // 2. Update media if provided
+      if (data.media && Array.isArray(data.media)) {
+        // Delete existing media
+        await tx.cruiseMedia.deleteMany({
+          where: { cruiseId: id },
+        });
+
+        // Create new media
+        if (data.media.length > 0) {
+          await tx.cruiseMedia.createMany({
+            data: data.media.map((m: any, index: number) => ({
+              cruiseId: id,
+              type: m.type || "image",
+              url: m.url,
+              filename: m.filename,
+              filesize: m.size || 0,
+              mimeType: m.mimeType || "image/jpeg",
+              isPrimary: m.isPrimary || false,
+              order: index,
+              alt: m.alt || "",
+              caption: m.caption || "",
+            })),
+          });
+        }
+      }
+
+      // 3. Return updated cruise with relations
+      return await tx.cruise.findUnique({
+        where: { id },
+        include: {
+          media: {
+            orderBy: {
+              order: "asc",
+            },
+          },
+          cruiseItineraries: {
+            orderBy: {
+              day: "asc",
+            },
+          },
+          flightItineraries: {
+            orderBy: {
+              order: "asc",
+            },
           },
         },
-        cruiseItineraries: {
-          orderBy: {
-            day: "asc",
-          },
-        },
-        flightItineraries: {
-          orderBy: {
-            order: "asc",
-          },
-        },
-      },
+      });
     });
 
     return NextResponse.json({

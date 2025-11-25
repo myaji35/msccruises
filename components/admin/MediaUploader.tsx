@@ -27,6 +27,9 @@ export default function MediaUploader({ media, onChange, maxFiles = 10 }: MediaU
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
+  // 디버깅: media 배열 변경 감지
+  console.log("🎨 MediaUploader rendered, media count:", media.length, media);
+
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -68,6 +71,8 @@ export default function MediaUploader({ media, onChange, maxFiles = 10 }: MediaU
       });
 
       const newFiles = await Promise.all(uploadPromises);
+      console.log("✅ 업로드 성공:", newFiles);
+      console.log("📁 전체 미디어 목록:", [...media, ...newFiles]);
       onChange([...media, ...newFiles]);
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -188,6 +193,7 @@ export default function MediaUploader({ media, onChange, maxFiles = 10 }: MediaU
                     alt={file.alt || `Uploaded image ${index + 1}`}
                     fill
                     className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <video

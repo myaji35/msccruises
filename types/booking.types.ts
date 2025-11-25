@@ -123,3 +123,58 @@ export interface PriceCalculation {
   tax: number;
   total: number;
 }
+
+// MSC World Europa Style Reservation Form (네이버 폼 스타일)
+export interface Participant {
+  gender: 'male' | 'female';
+  age: number;
+}
+
+export interface MSCReservationForm {
+  // 1. 여권상 이름
+  passportName: string;
+
+  // 2. 희망 출발일
+  desiredDepartureDate: string;
+
+  // 3-4. 참가자 수 및 연령
+  participants: Participant[];
+
+  // 5. 선호 투어 (해안 관광)
+  preferredTour?: string;
+
+  // 6. 추가 옵션
+  additionalOptions?: string;
+
+  // 7. 정기 복용 약물
+  regularMedication?: string;
+
+  // 8. 의료 상태 / 특별 사항
+  medicalConditions?: string;
+
+  // 9. 선호 객실 타입
+  preferredCabinType: 'interior' | 'oceanview' | 'balcony' | 'suite';
+
+  // 10. 특별 식사 요청
+  specialMealRequests?: string;
+
+  // 11. 휴대폰 번호
+  mobilePhone: string;
+
+  // 12. 이메일
+  email: string;
+
+  // 13. 카카오톡 ID
+  kakaoTalkId?: string;
+
+  // 14. SNS 계정
+  socialMediaAccount?: string;
+
+  // 15. 추가 요청 사항
+  additionalRequests?: string;
+
+  // 메타데이터
+  cruiseId?: string;
+  submittedAt?: Date;
+  status?: 'pending' | 'confirmed' | 'cancelled';
+}

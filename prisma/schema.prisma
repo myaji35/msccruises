@@ -687,3 +687,48 @@ model PackageDiscount {
   @@index([code])
   @@index([validFrom, validUntil])
 }
+
+// Reservation Model (네이버 폼 스타일 예약)
+model Reservation {
+  id                    String   @id @default(cuid())
+  reservationNumber     String   @unique
+
+  // 기본 정보
+  passportName          String   // 여권상 이름
+  desiredDepartureDate  String   // 희망 출발일
+
+  // 참가자 정보 (JSON array)
+  participants          String   // JSON: [{"gender": "male", "age": 30}, ...]
+
+  // 옵션 정보
+  preferredTour         String?  // 선호 투어
+  additionalOptions     String?  // 추가 옵션
+  regularMedication     String?  // 정기 복용 약물
+  medicalConditions     String?  // 의료 상태
+  preferredCabinType    String   // "interior", "oceanview", "balcony", "suite"
+  specialMealRequests   String?  // 특별 식사 요청
+
+  // 연락처
+  mobilePhone           String   // 휴대폰 번호
+  email                 String   // 이메일
+  kakaoTalkId           String?  // 카카오톡 ID
+  socialMediaAccount    String?  // SNS 계정
+
+  // 기타
+  additionalRequests    String?  // 추가 요청 사항
+
+  // 메타데이터
+  cruiseId              String?  // 연결된 크루즈 ID
+  status                String   @default("pending") // "pending", "confirmed", "cancelled"
+  submittedAt           DateTime @default(now())
+  processedAt           DateTime?
+  processedBy           String?  // 처리한 관리자 ID
+  notes                 String?  // 관리자 메모
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([status])
+  @@index([cruiseId])
+  @@index([email])
+  @@index([submittedAt])
+}
